@@ -14,6 +14,7 @@ use Dirthara\I18n\Exception\TranslationCacheException;
 use Dirthara\I18n\Exception\InvalidTranslationCatalogueException;
 
 use function hash;
+use function chmod;
 use function ksort;
 use function mkdir;
 use function is_dir;
@@ -35,6 +36,10 @@ use const SORT_STRING;
 
 final readonly class PhpTranslationCache implements TranslationCache
 {
+    private const int DIRECTORY_PERMISSIONS = 0o755;
+
+    private const int FILE_PERMISSIONS = 0o644;
+
     /**
      * @throws TranslationCacheException
      */
@@ -99,9 +104,14 @@ final readonly class PhpTranslationCache implements TranslationCache
         $temporary = $file . '.' . bin2hex(random_bytes(8)) . '.tmp';
         $contents = $this->compile($catalogue->messages);
 
-        [$written, $error] = $this->attempt(static fn(): int|false => file_put_contents($temporary, $contents));
+        [$written, $error] = $this->attempt(
+            static fn(): bool => (
+                file_put_contents($temporary, $contents) === strlen($contents)
+                && chmod($temporary, permissions: self::FILE_PERMISSIONS)
+            ),
+        );
 
-        if ($written !== strlen($contents)) {
+        if (!$written) {
             $this->attempt(static fn(): bool => unlink($temporary));
 
             throw TranslationCacheException::writeFailed($file, $cacheKey, $catalogue->locale, previous: $error);
@@ -180,7 +190,11 @@ final readonly class PhpTranslationCache implements TranslationCache
             return;
         }
 
-        [$created, $error] = $this->attempt(fn(): bool => mkdir($this->path, permissions: 0o777, recursive: true));
+        [$created, $error] = $this->attempt(fn(): bool => mkdir(
+            $this->path,
+            permissions: self::DIRECTORY_PERMISSIONS,
+            recursive: true,
+        ));
 
         if (!$created && !is_dir($this->path)) {
             throw TranslationCacheException::unusableDirectory($this->path, previous: $error);

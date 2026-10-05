@@ -22,8 +22,10 @@ use function hash;
 use function chmod;
 use function mkdir;
 use function touch;
+use function umask;
 use function is_dir;
 use function is_file;
+use function fileperms;
 use function str_repeat;
 use function file_get_contents;
 use function file_put_contents;
@@ -216,6 +218,23 @@ final class PhpTranslationCacheTest extends TestCase
         $cache->put('application', new TranslationCatalogue(new Locale('en-GB'), []));
 
         self::assertTrue(is_dir($path));
+    }
+
+    #[Test]
+    public function it_keeps_its_directory_and_entries_writable_by_their_owner_only(): void
+    {
+        $path = $this->directory->path . '/var/cache/translations';
+        $umask = umask(0);
+
+        try {
+            new PhpTranslationCache($path)->put('application', new TranslationCatalogue(new Locale('en-GB'), []));
+        } finally {
+            umask($umask);
+        }
+
+        self::assertSame(0o755, fileperms($path) & 0o777);
+        self::assertSame(0o755, fileperms($this->directory->path . '/var') & 0o777);
+        self::assertSame(0o644, fileperms($path . '/' . $this->fileName('application', 'en-GB')) & 0o777);
     }
 
     #[Test]

@@ -80,6 +80,17 @@ The cache writes to a local directory, given as `path`. It creates the directory
 first writes an entry. It does not use Flysystem: a cache file is a local runtime artefact that PHP includes directly,
 so OPcache can keep it compiled.
 
+:::danger
+The translation cache directory is executable application state. Reading an entry runs it as PHP, before the cache
+sees what it returns, so neither `CacheEntryValidation::Validate` nor `CacheEntryValidation::Trust` makes a file
+someone else wrote safe: validation only checks the array a file returns. Only trusted application processes and
+users may write to the directory.
+:::
+
+The cache creates its directories with mode `0755`, less whatever the umask removes, and gives every entry mode
+`0644` before it moves into place, whatever the umask: only the owner can write either. A directory that already exists
+keeps its own mode, so give it no more access than that.
+
 | Option       | Type                                     | Default                          | Meaning                       |
 |--------------|------------------------------------------|----------------------------------|-------------------------------|
 | `path`       | `string`                                 |                                  | The local cache directory.    |
