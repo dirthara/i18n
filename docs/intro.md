@@ -11,7 +11,8 @@ translating translations, and formatting values for a locale.
 :::note
 The package is in early development. Translations can be loaded, cached, and translated from several loaders for one
 locale; overriding one loader's translations with another's, and locale fallback, are not implemented yet. Of the
-formatters, the currency, number, percentage, list, locale, and date-time formatters are implemented so far.
+formatters, the currency, number, percentage, list, locale, date-time, and duration formatters are implemented so
+far.
 :::
 
 ## Concepts
@@ -45,4 +46,5 @@ another belongs to a layer that does not exist yet. No loader falls back from `n
 - [Formatting lists](formatting-lists.md): joining strings with the locale's separators and conjunctions.
 - [Formatting locales](formatting-locales.md): naming locales and their language, region, script, and variants.
 - [Formatting dates and times](formatting-dates-and-times.md): dates and times in a locale and timezone.
+- [Formatting durations](formatting-durations.md): lengths of time, written out or as on a clock.
 - [Exceptions](exceptions.md): what each exception means and the context it carries.

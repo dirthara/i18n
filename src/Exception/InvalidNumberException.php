@@ -44,6 +44,19 @@ final class InvalidNumberException extends InvalidArgumentException implements I
         );
     }
 
+    public static function negative(string $formatter, Locale $locale, int|float $number): self
+    {
+        return new self(
+            message: sprintf(
+                'The %s formatter for locale "%s" cannot format %s: it cannot be negative.',
+                $formatter,
+                $locale->code,
+                (string) $number,
+            ),
+            context: ['formatter' => $formatter, 'locale' => $locale->code, 'number' => $number],
+        );
+    }
+
     public static function notWhole(string $formatter, Locale $locale, float $number): self
     {
         return new self(

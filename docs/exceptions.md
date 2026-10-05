@@ -25,7 +25,7 @@ cache keys, and prefixes, with control characters escaped in the message.
 | `PluralRulesException`                 | `RuntimeException`         | Intl cannot create the plural rules for a locale, fails to give a plural category, or gives one the package does not know. |
 | `InvalidCurrencyAmountException`       | `InvalidArgumentException` | An amount to format is `NAN`, `INF`, or `-INF`. Its context holds `locale`, `currency`, and `amount`. |
 | `CurrencyFormatterException`           | `RuntimeException`         | Intl cannot create a currency formatter for a locale and style, or fails to format an amount. |
-| `InvalidNumberException`               | `InvalidArgumentException` | A number to format is `NAN`, `INF`, or `-INF`, or an ordinal is not a whole number. |
+| `InvalidNumberException`               | `InvalidArgumentException` | A number to format is `NAN`, `INF`, or `-INF`, an ordinal is not a whole number, or a duration is negative. |
 | `InvalidListItemException`             | `InvalidArgumentException` | An item of a list to format is not a string. Its context holds `formatter`, `locale`, `position`, and `type`. |
 | `InvalidDateTimeStyleException`        | `InvalidArgumentException` | A date-time formatter is asked to format neither a date nor a time. Its context holds `formatter` and `locale`. |
 | `FormatterException`                   | `RuntimeException`         | Intl cannot create a formatter, or fails to format a value, in any formatter but the currency formatter. |
@@ -91,5 +91,6 @@ The amount itself is not part of an exception's message or context, unless it is
 | Intl cannot create a formatter, such as for a locale code longer than the 156 characters `intl` accepts. | `FormatterException` | `formatter`, `locale`, `style`; the `IntlException` is the previous exception |
 | Intl fails to format a value.                                      | `FormatterException`      | `formatter`, `locale`, `style`, `intlCode`, `intlMessage`    |
 | A number is `NAN`, `INF`, or `-INF`.                                | `InvalidNumberException`  | `formatter`, `locale`, `number`                              |
+| A duration is negative.                                            | `InvalidNumberException`  | `formatter`, `locale`, `number`                              |
 | An ordinal is not a whole number.                                  | `InvalidNumberException`  | `formatter`, `locale`, `number`                              |
 | An item of a list is not a string.                                 | `InvalidListItemException` | `formatter`, `locale`, `position`, `type`                   |
