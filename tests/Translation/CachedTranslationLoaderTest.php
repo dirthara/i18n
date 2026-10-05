@@ -13,10 +13,8 @@ use Dirthara\I18n\Translation\PhpTranslationLoader;
 use Dirthara\I18n\Translation\TranslationCatalogue;
 use Dirthara\I18n\Tests\Fixtures\TemporaryDirectory;
 use Dirthara\I18n\Translation\JsonTranslationLoader;
-use Dirthara\I18n\Tests\Fixtures\TranslationDatabase;
 use Dirthara\I18n\Translation\CachedTranslationLoader;
 use Dirthara\I18n\Exception\TranslationLoaderException;
-use Dirthara\I18n\Translation\DatabaseTranslationLoader;
 use League\Flysystem\InMemory\InMemoryFilesystemAdapter;
 use Dirthara\I18n\Tests\Fixtures\CountingTranslationLoader;
 use Dirthara\I18n\Exception\InvalidTranslationCatalogueException;
@@ -196,31 +194,6 @@ final class CachedTranslationLoaderTest extends TestCase
 
         self::assertNull($this->cache->get('application', new Locale('nl-NL')));
         self::assertNull($this->cache->get('application', new Locale('en-GB')));
-    }
-
-    #[Test]
-    public function it_does_not_query_the_database_again_until_the_entry_is_forgotten(): void
-    {
-        $database = new TranslationDatabase();
-        $database->createTable();
-        $database->insert('en-GB', 'welcome', 'Welcome');
-        $loader = new CachedTranslationLoader(
-            new DatabaseTranslationLoader($database->database, prefix: 'app'),
-            $this->cache,
-            'database',
-        );
-
-        self::assertSame(['app.welcome' => 'Welcome'], $loader->load(new Locale('en-GB'))->messages);
-
-        $database->drop();
-
-        self::assertSame(['app.welcome' => 'Welcome'], $loader->load(new Locale('en-GB'))->messages);
-
-        $this->cache->forget('database', new Locale('en-GB'));
-
-        $this->expectException(TranslationLoaderException::class);
-
-        $loader->load(new Locale('en-GB'));
     }
 
     #[Test]

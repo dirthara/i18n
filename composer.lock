@@ -4,59 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bec3270c5a0e3ab6e012d76450d2c003",
+    "content-hash": "0061970a99cdb1f187b210df00aebec6",
     "packages": [
-        {
-            "name": "dirthara/database",
-            "version": "0.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/dirthara/database.git",
-                "reference": "122bd79e1561cead5b278c67b9618f91cb2a95a7"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/dirthara/database/zipball/122bd79e1561cead5b278c67b9618f91cb2a95a7",
-                "reference": "122bd79e1561cead5b278c67b9618f91cb2a95a7",
-                "shasum": ""
-            },
-            "require": {
-                "ext-pdo": "*",
-                "php": "^8.5"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^13.0"
-            },
-            "suggest": {
-                "ext-pdo_mysql": "To connect with the MySQL driver",
-                "ext-pdo_pgsql": "To connect with the PostgreSQL driver",
-                "ext-pdo_sqlite": "To connect with the SQLite driver",
-                "ext-pdo_sqlsrv": "To connect with the SQL Server driver"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Dirthara\\Database\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Dirthara"
-                }
-            ],
-            "description": "Database connection for the Dirthara framework",
-            "homepage": "https://dirthara.github.io/docs/",
-            "support": {
-                "docs": "https://dirthara.github.io/docs/",
-                "issues": "https://github.com/dirthara/database/issues",
-                "source": "https://github.com/dirthara/database"
-            },
-            "time": "2026-09-30T12:45:11+00:00"
-        },
         {
             "name": "league/flysystem",
             "version": "3.36.0",

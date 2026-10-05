@@ -14,10 +14,9 @@ The package depends on:
 | Package                                                     | Used for                                       |
 |-------------------------------------------------------------|------------------------------------------------|
 | [`league/flysystem`](https://flysystem.thephpleague.com/) `^3.0` | Reading PHP and JSON translation files.    |
-| [`dirthara/database`](https://github.com/dirthara/database) `^0.2` | Reading translations from a database table. |
 
-The database loader needs the PDO driver of the database it reads: `pdo_mysql`, `pdo_pgsql`, `pdo_sqlite`, or
-`pdo_sqlsrv`.
+There is no database loader. To load translations from a database, implement
+[`TranslationLoader`](loading-translations.md#custom-loaders).
 
 ## Package installation
 

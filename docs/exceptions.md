@@ -7,9 +7,9 @@ description: The exceptions Dirthara I18n throws, what each one means, and the c
 
 Every exception the package throws implements `Dirthara\I18n\Exception\I18nException`, so catching that interface
 catches anything from the package. Each one carries a `context` array with the details of the failure, and wraps the
-exception that caused it, such as a Flysystem, JSON, PHP, or `dirthara/database` exception, as its previous exception.
+exception that caused it, such as a Flysystem, JSON, or PHP exception, as its previous exception.
 
-No message or context contains a translation. They can contain paths, locale codes, table names, translation keys,
+No message or context contains a translation. They can contain paths, locale codes, translation keys,
 cache keys, and prefixes, with control characters escaped in the message.
 
 | Exception                              | Extends                    | Thrown when                                             |
@@ -37,10 +37,6 @@ cache keys, and prefixes, with control characters escaped in the message.
 | A JSON key is empty or a decimal integer.                          | `path`, `key`               |
 | Two translations produce the same key.                             | `path`, `key`               |
 | The `dirthara-i18n://` stream wrapper cannot be registered.        | `scheme`                    |
-| A database query fails.                                            | `table`, `locale`           |
-| A database row has a `key` or `translation` that is not a string.  | `table`, `locale`, `column` |
-| A database key is empty or a decimal integer.                      | `table`, `locale`, `key`    |
-| Two database rows for one locale have the same key.                | `table`, `locale`, `key`    |
 | A loader returns a catalogue for another locale than requested.    | `locale`, `loadedLocale`, and `loader` when combined |
 | Two combined loaders produce the same key.                         | `locale`, `key`, `loaders`  |
 

@@ -10,8 +10,7 @@ is in early development and has no release yet. Usage documentation lives in [`d
 
 ## Installation
 
-Requires PHP `^8.5` (PHP 8.5 or a later PHP 8 release) with the `intl` extension, and depends on `league/flysystem` and
-`dirthara/database`. The database translation loader also needs the PDO driver of the database it reads. Install with:
+Requires PHP `^8.5` (PHP 8.5 or a later PHP 8 release) with the `intl` extension, and depends on `league/flysystem`. Install with:
 
 ```sh
 composer require dirthara/i18n
@@ -47,8 +46,6 @@ docker compose exec php composer test
 ```
 
 Tests belong in `tests`, under `Dirthara\I18n\Tests`. Source belongs in `src`, under `Dirthara\I18n`.
-
-The database tests run against an in-memory SQLite database, so they need no database service.
 
 ## Code quality
 

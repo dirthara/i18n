@@ -22,8 +22,8 @@ in `tests` with every implementation change.
 ## Development
 Use the PHP container for Composer and PHP commands; see [README.md](README.md). Use the `Dirthara\I18n`
 namespace for source and `Dirthara\I18n\Tests` for tests. Declare strict types in every PHP file.
-This package needs no database service: its database tests use in-memory SQLite, which the PHP image includes, so its
-image and `compose.yaml` carry none of the template's database drivers or services.
+This package needs no database, so its image and `compose.yaml` carry none of the template's database drivers or
+services.
 
 ## Language
 Write everything in British English: names, messages, comments, documentation, and commit messages. Read and follow

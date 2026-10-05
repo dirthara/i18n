@@ -26,12 +26,12 @@ $translator->translate('validation.required', ['attribute' => 'email']);
 
 The translator does not load, combine, or cache anything, and constructing it cannot fail. Everything before it is up
 to the loaders: [combine](loading-translations.md#combining-loaders) the sources a catalogue needs, such as PHP files,
-JSON files, and a database table, and [cache](caching-translations.md) the result, so that a request includes one file
+JSON files, and custom loaders, and [cache](caching-translations.md) the result, so that a request includes one file
 and nothing is loaded, combined, or checked for conflicts again:
 
 ```php
 $loader = new CachedTranslationLoader(
-    loader: new CombinedTranslationLoader($phpLoader, $jsonLoader, $databaseLoader),
+    loader: new CombinedTranslationLoader($phpLoader, $jsonLoader, $packageLoader),
     cache: $cache,
     cacheKey: 'application-translations-v1',
 );

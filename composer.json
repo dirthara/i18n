@@ -6,18 +6,11 @@
     "require": {
         "php": "^8.5",
         "ext-intl": "*",
-        "dirthara/database": "^0.2",
         "league/flysystem": "^3.0"
     },
     "require-dev": {
         "league/flysystem-memory": "^3.0",
         "phpunit/phpunit": "^13.0"
-    },
-    "suggest": {
-        "ext-pdo_mysql": "To load translations from a MySQL database",
-        "ext-pdo_pgsql": "To load translations from a PostgreSQL database",
-        "ext-pdo_sqlite": "To load translations from an SQLite database",
-        "ext-pdo_sqlsrv": "To load translations from an SQL Server database"
     },
     "license": "MIT",
     "autoload": {

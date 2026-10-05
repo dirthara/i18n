@@ -19,7 +19,7 @@ locale; overriding one loader's translations with another's, and locale fallback
 |-------------|-----------------------------------------------------------------------------------------------------------|
 | Locale      | A well-formed BCP 47 language tag, such as `en-GB`, in canonical form.                                     |
 | Catalogue   | The translations of one locale from one source, by key: a `TranslationCatalogue`.                         |
-| Loader      | Reads one configured source, such as a directory of PHP files or a database table, into a catalogue.     |
+| Loader      | Reads one configured source, such as a directory of PHP files or JSON files, into a catalogue.           |
 | Prefix      | An optional namespace a loader puts in front of every key it loads, such as `dirthara.validation`.      |
 | Combined loader | Combines the catalogues of several loaders into one, rejecting a key two of them produce.          |
 | Cache       | Stores catalogues as compiled PHP files, so a request does not read the source again.                    |
@@ -32,7 +32,7 @@ another belongs to a layer that does not exist yet. No loader falls back from `n
 ## Pages
 
 - [Installation](installation.md): requirements and installing the package.
-- [Loading translations](loading-translations.md): catalogues, the PHP, JSON, and database loaders, prefixes, and custom
+- [Loading translations](loading-translations.md): catalogues, the PHP and JSON loaders, prefixes, combining, and custom
   loaders.
 - [Caching translations](caching-translations.md): the compiled PHP cache, its file format, and invalidating it.
 - [Translating](translating.md): the translator, missing translations, placeholders, and plurals.

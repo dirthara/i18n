@@ -2,7 +2,7 @@
 id: loading-translations
 title: Loading translations
 sidebar_position: 3
-description: Translation catalogues, the PHP, JSON, and database loaders, key prefixes, and writing a custom loader.
+description: Translation catalogues, the PHP and JSON loaders, key prefixes, combining loaders, and writing a custom loader.
 ---
 
 A loader reads the translations of one locale from one configured source and returns them as a
@@ -76,13 +76,12 @@ which of two equal keys takes effect is not defined, and may change.
 For the PHP and JSON loaders, the source is the configured `path` directory, which has to exist: a typo such as
 `translatons` throws rather than reading as a source without translations. A loader whose `path` is the root of the
 filesystem (`''` or `/`) does not check the root, because some Flysystem adapters do not report an empty root as an
-existing directory. For the database loader, the source is the table: a table without rows for the locale gives an
-empty catalogue, and a missing table throws.
+existing directory.
 
 ### Conflicts between loaders
 
 Within one source, a loader rejects a key it produces twice, where it can detect it: two PHP translations that flatten
-to the same key, or two database rows for the same locale and key. Two different loaders can still produce the same key
+to the same key. Two different loaders can still produce the same key
 for one locale, such as an application and a package that both define `validation.required`.
 
 [Combining loaders](#combining-loaders) follows these rules:
@@ -91,12 +90,12 @@ for one locale, such as an application and a package that both define `validatio
 - **Overriding will be opt-in.** Once it is supported, one loader's translation replaces another's only when the
   caller asks for an override policy.
 - **Precedence will come from the order the caller gives the loaders in.** It never depends on the order files are
-  listed in or rows are returned in.
+  listed in.
 - **A catalogue stays unaware of where its messages came from.** Combining happens outside it.
 
 ## Prefixes
 
-The PHP, JSON, and database loaders take an optional prefix, which namespaces every key they load. A package can use
+The PHP and JSON loaders take an optional prefix, which namespaces every key they load. A package can use
 one to keep its keys apart from an application's.
 
 | Prefix                | Key in the source     | Key in the catalogue           |
@@ -177,7 +176,7 @@ reported with its path.
 
 :::caution
 A PHP translation file is code, and loading it runs that code. Load PHP translations only from a source you trust as
-much as the application itself. Use JSON or the database for translations from anywhere else.
+much as the application itself. Use JSON for translations from anywhere else.
 :::
 
 ## JSON files
@@ -216,50 +215,11 @@ The keys are used as they are, so a key can be a whole sentence. With the prefix
 boolean, or a number is rejected. A file that is not valid JSON, or whose top level is not an object, is rejected too.
 Keys have to be unique; see [duplicate JSON keys](#duplicate-json-keys).
 
-## Database
-
-`Dirthara\I18n\Translation\DatabaseTranslationLoader` reads translations from a table through
-[`dirthara/database`](https://github.com/dirthara/database).
-
-```php
-use Dirthara\I18n\Translation\DatabaseTranslationLoader;
-
-$loader = new DatabaseTranslationLoader(
-    database: $database->using(),
-    table: 'translations',
-    prefix: null,
-);
-```
-
-| Option     | Type                                  | Default          | Meaning                                  |
-|------------|---------------------------------------|------------------|------------------------------------------|
-| `database` | `Dirthara\Database\ConnectedDatabase` |                  | The connection the table is on.          |
-| `table`    | `string`                              | `'translations'` | The table to read.                       |
-| `prefix`   | `?string`                             | `null`           | The prefix for every key.                |
-
-The table needs these columns. Others, such as an `id` or timestamps, are allowed and ignored.
-
-| Column        | Holds                                                    |
-|---------------|----------------------------------------------------------|
-| `locale`      | The canonical locale code, such as `nl-NL`.              |
-| `key`         | The translation key.                                     |
-| `translation` | The translated message.                                  |
-
-The loader only reads. It does not create, migrate, or change the table, so the application has to create it, for
-example with a migration. It reads the rows whose `locale` is exactly the requested locale's code: `nl-NL` does not
-read `nl`, `nl-nl`, or `nl_NL` rows, even when the column's collation would match them.
-
-Every `key` and `translation` has to be a string; a `NULL` or a number is rejected rather than converted, and a key has
-to follow the [key rules](#keys) once the prefix is applied. A key that appears in two rows for the same locale is rejected too, instead of letting the order the database returns rows in
-decide which one wins. A failure in the database, such as a missing table, is reported as a
-`TranslationLoaderException` with the database's exception as its previous exception, so a caller never has to catch a
-`dirthara/database` exception. Neither the message nor the context of an exception contains a translation.
-
 ## Combining loaders
 
 `Dirthara\I18n\Translation\CombinedTranslationLoader` is a loader made of other loaders. It loads the locale from each
-of them and returns one catalogue with all their translations, so PHP files, JSON files, a database table, and custom
-loaders can be used as one source.
+of them and returns one catalogue with all their translations, so PHP files, JSON files, and custom loaders can be
+used as one source.
 
 ```php
 use Dirthara\I18n\Translation\CombinedTranslationLoader;
@@ -267,7 +227,7 @@ use Dirthara\I18n\Translation\CombinedTranslationLoader;
 $loader = new CombinedTranslationLoader(
     new PhpTranslationLoader($filesystem, 'translations'),
     new JsonTranslationLoader($filesystem, 'translations'),
-    new DatabaseTranslationLoader($database->using(), prefix: 'content'),
+    new JsonTranslationLoader($filesystem, 'vendor/acme/translations', prefix: 'acme'),
 );
 ```
 
@@ -288,7 +248,7 @@ in another combined loader, or loaded for a [translator](translating.md).
 ## Custom loaders
 
 Anything that implements `TranslationLoader` is a loader, so a package can load translations from any other source,
-such as an API or another file format. A custom loader returns a catalogue for exactly the locale it was asked for,
+such as a database, an API, or another file format. A custom loader returns a catalogue for exactly the locale it was asked for,
 returns an empty catalogue when the source has nothing for that locale, and throws an exception that implements
 `Dirthara\I18n\Exception\I18nException` when the source cannot be read. Any loader can be cached; see
 [Caching translations](caching-translations.md).

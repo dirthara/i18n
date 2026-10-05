@@ -9,7 +9,6 @@ use JsonException;
 use RuntimeException;
 use Dirthara\I18n\Locale;
 use League\Flysystem\FilesystemException;
-use Dirthara\Database\Exception\DatabaseException;
 
 use function sprintf;
 
@@ -134,59 +133,6 @@ final class TranslationLoaderException extends RuntimeException implements I18nE
                 self::printable($scheme),
             ),
             context: ['scheme' => $scheme],
-        );
-    }
-
-    public static function queryFailed(string $table, Locale $locale, DatabaseException $previous): self
-    {
-        return new self(
-            message: sprintf(
-                'Unable to load the translations for locale "%s" from table "%s".',
-                $locale->code,
-                self::printable($table),
-            ),
-            previous: $previous,
-            context: ['table' => $table, 'locale' => $locale->code],
-        );
-    }
-
-    public static function malformedRow(string $table, Locale $locale, string $column): self
-    {
-        return new self(
-            message: sprintf(
-                'A translation row for locale "%s" in table "%s" has a "%s" that is not a string.',
-                $locale->code,
-                self::printable($table),
-                $column,
-            ),
-            context: ['table' => $table, 'locale' => $locale->code, 'column' => $column],
-        );
-    }
-
-    public static function invalidDatabaseKey(string $table, Locale $locale, string $key): self
-    {
-        return new self(
-            message: sprintf(
-                'The translation key "%s" for locale "%s" in table "%s" is not valid: a key is a string that is not '
-                . 'empty and not a decimal integer.',
-                self::printable($key),
-                $locale->code,
-                self::printable($table),
-            ),
-            context: ['table' => $table, 'locale' => $locale->code, 'key' => $key],
-        );
-    }
-
-    public static function duplicateDatabaseKey(string $table, Locale $locale, string $key): self
-    {
-        return new self(
-            message: sprintf(
-                'The translation key "%s" is defined more than once for locale "%s" in table "%s".',
-                self::printable($key),
-                $locale->code,
-                self::printable($table),
-            ),
-            context: ['table' => $table, 'locale' => $locale->code, 'key' => $key],
         );
     }
 

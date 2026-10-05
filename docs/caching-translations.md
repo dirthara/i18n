@@ -6,13 +6,13 @@ description: The compiled PHP translation cache, cache keys, its file format, an
 ---
 
 Loading translations from their source on every request means scanning directories, running PHP files, decoding JSON,
-or querying the database, and then flattening, checking, and prefixing the result again. The translation cache does
+or querying another source, and then flattening, checking, and prefixing the result again. The translation cache does
 that once and stores the finished catalogue as a plain PHP file, so later requests only include that file.
 
 ## Caching a loader
 
 Caching is not part of any loader. `Dirthara\I18n\Translation\CachedTranslationLoader` wraps any `TranslationLoader`
-and is a loader itself, so the PHP, JSON, and database loaders, and any custom loader, are cached the same way:
+and is a loader itself, so the PHP and JSON loaders, combined loaders, and any custom loader are cached the same way:
 
 ```php
 use Dirthara\I18n\Translation\PhpTranslationCache;
@@ -53,7 +53,7 @@ adapter depends on. Choose it yourself, and keep it the same between requests an
 source's configuration stays the same.
 
 :::caution
-When anything changes that affects the keys or messages a loader produces, such as its path, prefix, table,
+When anything changes that affects the keys or messages a loader produces, such as its path, prefix,
 filesystem, or any setting of a custom loader, its cached entries are stale. Either forget every entry of the old
 cache key with `forgetAll()`, or give the loader a new cache key, such as `validation-translations-v2`. Neither
 happens by itself.
@@ -160,7 +160,7 @@ forget or rebuild the entries when in doubt. Every entry the cache writes itself
 ## Invalidation
 
 The cache never expires anything and never checks a source for changes. There is no time to live, and changing a PHP
-file, a JSON file, or a row in the translations table does not invalidate anything. Database translations have no
+file, a JSON file, or the data behind a custom loader does not invalidate anything. Not every source has a
 modification time to compare, and checking every source on every request would cost what the cache saves.
 
 When translations change, the application clears or rebuilds the entries for them:
