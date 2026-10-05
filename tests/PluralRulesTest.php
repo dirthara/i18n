@@ -14,7 +14,11 @@ use PHPUnit\Framework\Attributes\Test;
 use Dirthara\I18n\Exception\I18nException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Dirthara\I18n\Exception\PluralRulesException;
+use Dirthara\I18n\Exception\InvalidPluralCountException;
 use Dirthara\I18n\Tests\Fixtures\FailingMessageFormatter;
+
+use const INF;
+use const NAN;
 
 final class PluralRulesTest extends TestCase
 {
@@ -47,6 +51,25 @@ final class PluralRulesTest extends TestCase
         self::assertSame(PluralCategory::Few, $second->category(2));
         self::assertSame(PluralCategory::Other, $english->category(2));
         self::assertSame(PluralCategory::Many, $first->category(5));
+    }
+
+    #[Test]
+    #[DataProvider('nonFiniteCounts')]
+    public function it_rejects_a_count_that_is_not_finite(float $count, string $reported): void
+    {
+        try {
+            new PluralRules(new Locale('en-GB'))->category($count);
+            self::fail('Expected an InvalidPluralCountException.');
+        } catch (InvalidPluralCountException $exception) {
+            self::assertInstanceOf(I18nException::class, $exception);
+            self::assertSame(
+                'The plural category of '
+                . $reported
+                . ' for locale "en-GB" does not exist: a count has to be a finite number.',
+                $exception->getMessage(),
+            );
+            self::assertSame(['locale' => 'en-GB', 'count' => $reported], $exception->context);
+        }
     }
 
     #[Test]
@@ -92,6 +115,16 @@ final class PluralRulesTest extends TestCase
     }
 
     /**
+     * @return iterable<string, array{float, string}>
+     */
+    public static function nonFiniteCounts(): iterable
+    {
+        yield 'not a number' => [NAN, 'NAN'];
+        yield 'infinity' => [INF, 'INF'];
+        yield 'negative infinity' => [-INF, '-INF'];
+    }
+
+    /**
      * @return iterable<string, array{string, int|float, PluralCategory}>
      */
     public static function categories(): iterable
@@ -118,6 +151,8 @@ final class PluralRulesTest extends TestCase
         yield 'Japanese has only other' => ['ja', 1, PluralCategory::Other];
         yield 'Latvian zero' => ['lv', 10, PluralCategory::Zero];
         yield 'unassigned language' => ['zz', 1, PluralCategory::Other];
+        yield 'large count' => ['en-GB', 1500, PluralCategory::Other];
+        yield 'large fraction' => ['en-GB', 1500.25, PluralCategory::Other];
     }
 
     private function useFormatter(string $locale, MessageFormatter $formatter): void

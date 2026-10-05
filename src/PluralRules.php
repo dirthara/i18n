@@ -7,6 +7,10 @@ namespace Dirthara\I18n;
 use MessageFormatter;
 use Dirthara\I18n\Enum\PluralCategory;
 use Dirthara\I18n\Exception\PluralRulesException;
+use Dirthara\I18n\Exception\InvalidPluralCountException;
+
+use function is_float;
+use function is_finite;
 
 final class PluralRules
 {
@@ -23,9 +27,14 @@ final class PluralRules
 
     /**
      * @throws PluralRulesException
+     * @throws InvalidPluralCountException
      */
     public function category(int|float $count): PluralCategory
     {
+        if (is_float($count) && !is_finite($count)) {
+            throw InvalidPluralCountException::notFinite($this->locale, $count);
+        }
+
         self::$formatters[$this->locale->code] ??= new MessageFormatter($this->locale->code, self::PATTERN);
 
         $formatter = self::$formatters[$this->locale->code];

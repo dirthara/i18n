@@ -16,9 +16,13 @@ use Dirthara\I18n\Translation\TranslationCatalogue;
 use Dirthara\I18n\Tests\Fixtures\TemporaryDirectory;
 use Dirthara\I18n\Translation\JsonTranslationLoader;
 use Dirthara\I18n\Translation\CachedTranslationLoader;
+use Dirthara\I18n\Exception\InvalidPluralCountException;
 use Dirthara\I18n\Translation\CombinedTranslationLoader;
 use League\Flysystem\InMemory\InMemoryFilesystemAdapter;
 use Dirthara\I18n\Contract\Translator as TranslatorContract;
+
+use const INF;
+use const NAN;
 
 final class TranslatorTest extends TestCase
 {
@@ -273,6 +277,30 @@ final class TranslatorTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('nonFiniteCounts')]
+    public function it_rejects_a_plural_count_that_is_not_finite(float $count): void
+    {
+        $translator = $this->translator([
+            'inbox.messages.NAN' => 'Not a number',
+            'inbox.messages.INF' => 'Infinite',
+            'inbox.messages.-INF' => 'Negative infinite',
+            'inbox.messages.other' => '{count} messages',
+        ]);
+
+        foreach ([
+            static fn(): string => $translator->translatePlural('inbox.messages', $count),
+            static fn(): bool => $translator->hasPlural('inbox.messages', $count),
+        ] as $call) {
+            try {
+                $call();
+                self::fail('Expected an InvalidPluralCountException.');
+            } catch (InvalidPluralCountException $exception) {
+                self::assertSame('en-GB', $exception->context['locale']);
+            }
+        }
+    }
+
+    #[Test]
     public function it_fills_in_the_count_unless_a_count_parameter_is_given(): void
     {
         $translator = $this->translator(['visitors.other' => '{count} visitors on {site}']);
@@ -359,6 +387,16 @@ final class TranslatorTest extends TestCase
         yield 'two' => [2, 'You have 2 messages.'];
         yield 'fraction' => [1.5, 'You have 1.5 messages.'];
         yield 'negative one' => [-1, 'You have -1 message.'];
+    }
+
+    /**
+     * @return iterable<string, array{float}>
+     */
+    public static function nonFiniteCounts(): iterable
+    {
+        yield 'not a number' => [NAN];
+        yield 'infinity' => [INF];
+        yield 'negative infinity' => [-INF];
     }
 
     /**

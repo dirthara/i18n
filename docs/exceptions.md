@@ -20,6 +20,7 @@ cache keys, and prefixes, with control characters escaped in the message.
 | `InvalidTranslationCatalogueException` | `InvalidArgumentException` | A catalogue is given a message that is not a string.    |
 | `TranslationLoaderException`           | `RuntimeException`         | A translation source cannot be read or is malformed.    |
 | `TranslationCacheException`            | `RuntimeException`         | A cache entry cannot be written, read, or removed, or is malformed. |
+| `InvalidPluralCountException`          | `InvalidArgumentException` | A plural count is `NAN`, `INF`, or `-INF`. Its context holds `locale` and `count`. |
 | `PluralRulesException`                 | `RuntimeException`         | ICU fails to give a plural category, or gives one the package does not know. |
 
 ## Loader failures

@@ -136,6 +136,10 @@ $translator->translatePlural('visitors', 1500, ['count' => '1,500']);   // '1,50
 
 The form is always chosen by the count argument, never by a `count` parameter.
 
+A count is any finite integer or float, negative ones included: CLDR gives `-1` a category like any other number. `NAN`,
+`INF`, and `-INF` are not counts: `translatePlural()`, `hasPlural()`, and `PluralRules::category()` throw an
+`InvalidPluralCountException` for them, even when a translation exists under a key such as `inbox.messages.INF`.
+
 `hasPlural()` finds out whether `translatePlural()` has a translation for a count, by the same steps: it is `true` when
 the exact count, the count's category, or `other` exists, and `false` when `translatePlural()` would return the key.
 The key on its own, without a form, is not a plural form:

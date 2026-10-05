@@ -7,6 +7,7 @@ namespace Dirthara\I18n\Translation;
 use Dirthara\I18n\Locale;
 use Dirthara\I18n\PluralRules;
 use Dirthara\I18n\Enum\PluralCategory;
+use Dirthara\I18n\Exception\I18nException;
 use Dirthara\I18n\Contract\Translator as TranslatorContract;
 
 use function strtr;
@@ -34,6 +35,8 @@ final readonly class Translator implements TranslatorContract
 
     /**
      * @param array<string, string|int|float> $parameters
+     *
+     * @throws I18nException
      */
     public function translatePlural(string $key, int|float $count, array $parameters = []): string
     {
@@ -45,16 +48,24 @@ final readonly class Translator implements TranslatorContract
         return $this->catalogue->has($key);
     }
 
+    /**
+     * @throws I18nException
+     */
     public function hasPlural(string $key, int|float $count): bool
     {
         return $this->pluralMessage($key, $count) !== null;
     }
 
+    /**
+     * @throws I18nException
+     */
     private function pluralMessage(string $key, int|float $count): ?string
     {
+        $category = $this->pluralRules->category($count);
+
         return (
             $this->catalogue->get($key . '.' . $count) ?? $this->catalogue->get(
-                $key . '.' . $this->pluralRules->category($count)->value,
+                $key . '.' . $category->value,
             ) ?? $this->catalogue->get($key . '.' . PluralCategory::Other->value)
         );
     }
