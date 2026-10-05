@@ -1,7 +1,7 @@
 ---
 id: formatting-numbers
 title: Formatting numbers
-sidebar_position: 7
+sidebar_position: 8
 description: Formatting numbers for a locale, compact and scientific notation, spelled-out numbers, ordinals, and the factory.
 ---
 

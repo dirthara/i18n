@@ -1,7 +1,7 @@
 ---
 id: caching-translations
 title: Caching translations
-sidebar_position: 4
+sidebar_position: 5
 description: The compiled PHP translation cache, cache keys, its file format, and invalidating it.
 ---
 

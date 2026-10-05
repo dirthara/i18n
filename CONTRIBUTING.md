@@ -125,7 +125,7 @@ Then update the supported versions table below and in
 | --- | --- | --- |
 | `0.1` | 8.5 | Active |
 
-The initial `0.1` scaffold is unreleased.
+`0.1` has no release yet; `0.1.0` will be its first.
 
 ## Before you open a pull request
 

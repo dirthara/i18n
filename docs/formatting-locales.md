@@ -1,7 +1,7 @@
 ---
 id: formatting-locales
 title: Formatting locales
-sidebar_position: 10
+sidebar_position: 11
 description: Naming locales and their language, region, script, and variants in another locale, and the factory.
 ---
 

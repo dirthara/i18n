@@ -1,7 +1,7 @@
 ---
 id: formatting-lists
 title: Formatting lists
-sidebar_position: 9
+sidebar_position: 10
 description: Joining a list of strings for a locale, the list types and widths, and the list formatter factory.
 ---
 

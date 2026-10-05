@@ -1,7 +1,7 @@
 ---
 id: formatting-relative-dates-and-times
 title: Formatting relative dates and times
-sidebar_position: 13
+sidebar_position: 14
 description: Writing how far a moment is from another, such as yesterday, next week, or in 6 weeks, for a locale.
 ---
 

@@ -1,7 +1,7 @@
 ---
 id: formatting-dates-and-times
 title: Formatting dates and times
-sidebar_position: 11
+sidebar_position: 12
 description: Formatting dates and times for a locale in a timezone, the date and time styles, and the factory.
 ---
 

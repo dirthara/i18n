@@ -4,7 +4,7 @@
 
 | Version | Status |
 | --- | --- |
-| 0.1.x | Active development; unreleased |
+| 0.1.x | Active; no release yet, `0.1.0` will be the first |
 | Older | Unsupported |
 
 While the package is pre-1.0, only the latest release line receives fixes.

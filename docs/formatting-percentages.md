@@ -1,7 +1,7 @@
 ---
 id: formatting-percentages
 title: Formatting percentages
-sidebar_position: 8
+sidebar_position: 9
 description: Formatting fractions as percentages for a locale, and the percentage formatter factory.
 ---
 

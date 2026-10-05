@@ -1,7 +1,7 @@
 ---
 id: loading-translations
 title: Loading translations
-sidebar_position: 3
+sidebar_position: 4
 description: Translation catalogues, the PHP and JSON loaders, key prefixes, combining loaders, and writing a custom loader.
 ---
 

@@ -5,8 +5,9 @@ sidebar_position: 1
 description: What Dirthara I18n does, the concepts it works with, and where each part is documented.
 ---
 
-Dirthara I18n provides internationalisation for the Dirthara framework: locales, currencies, loading, caching, and
-translating translations, and formatting values for a locale.
+Dirthara I18n provides internationalisation for the Dirthara framework: locales and currencies; translations with
+pluralisation, loaded from PHP and JSON files and kept in a compiled cache; and formatting numbers, money, percentages,
+lists, locale names, dates and times, durations, and relative times the way a locale writes them.
 
 :::note
 The package has no release yet; 0.1.0 will be its first. See [the scope of 0.1](#scope-of-01) for what it contains and
@@ -47,13 +48,14 @@ These are not part of 0.1, and may come in a later version:
 |------------------------------------------------|---------------------------------------------------------------------------|
 | Formatting measurements and units in general, such as `12 km` or `3 kg` | Only lengths of time, through the [duration formatter](formatting-durations.md). |
 | Naming timezones, such as `Central European Time` | The full and long styles of the [date-time formatter](formatting-dates-and-times.md) name the formatter's timezone. |
-| Falling back from one locale to another, such as from `nl-BE` to `nl` | Load and combine the catalogues of each locale you need yourself.         |
+| Falling back from one locale to another, such as from `nl-BE` to `nl` | Load a catalogue for each locale, and look a key up in the next catalogue when the first one does not have it. |
 | Letting one loader override another's translations | Give each source its own keys, with a [prefix](loading-translations.md#prefixes). |
 | A database translation loader                  | Implement [`TranslationLoader`](loading-translations.md#custom-loaders) for a database or a remote source; a loader of your own can be combined and cached like any other. |
 
 ## Pages
 
-- [Installation](installation.md): requirements and installing the package.
+- [Installation](installation.md): requirements, ICU data, and installing the package.
+- [Locales and currencies](locales-and-currencies.md): the `Locale` and `Currency` value objects and plural rules.
 - [Loading translations](loading-translations.md): catalogues, the PHP and JSON loaders, prefixes, combining, and custom
   loaders.
 - [Caching translations](caching-translations.md): the compiled PHP cache, its file format, and invalidating it.

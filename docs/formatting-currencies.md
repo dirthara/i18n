@@ -1,7 +1,7 @@
 ---
 id: formatting-currencies
 title: Formatting currencies
-sidebar_position: 6
+sidebar_position: 7
 description: Formatting amounts of money for a locale, the currency styles, rounding, and the formatter factory.
 ---
 

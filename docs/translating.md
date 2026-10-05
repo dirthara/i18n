@@ -1,7 +1,7 @@
 ---
 id: translating
 title: Translating
-sidebar_position: 5
+sidebar_position: 6
 description: Translating keys from a translation catalogue, plural forms, and filling placeholders with parameters.
 ---
 

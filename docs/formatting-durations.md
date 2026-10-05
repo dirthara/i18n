@@ -1,7 +1,7 @@
 ---
 id: formatting-durations
 title: Formatting durations
-sidebar_position: 12
+sidebar_position: 13
 description: Formatting a duration in seconds for a locale, the duration styles, and the duration formatter factory.
 ---
 
