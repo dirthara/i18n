@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Dirthara\I18n;
+namespace Dirthara\I18n\Enum;
 
-enum DateTimeStyle
+enum TimeStyle
 {
     case None;
     case Short;

@@ -7,7 +7,8 @@ namespace Dirthara\I18n\Contract;
 use DateTimeZone;
 use DateTimeInterface;
 use Dirthara\I18n\Locale;
-use Dirthara\I18n\DateTimeStyle;
+use Dirthara\I18n\Enum\DateStyle;
+use Dirthara\I18n\Enum\TimeStyle;
 
 interface DateTimeFormatter
 {
@@ -17,7 +18,7 @@ interface DateTimeFormatter
 
     public function format(
         DateTimeInterface $dateTime,
-        DateTimeStyle $dateStyle = DateTimeStyle::Medium,
-        DateTimeStyle $timeStyle = DateTimeStyle::None,
+        DateStyle $dateStyle = DateStyle::Medium,
+        TimeStyle $timeStyle = TimeStyle::None,
     ): string;
 }
