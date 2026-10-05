@@ -1,7 +1,7 @@
 ---
 id: exceptions
 title: Exceptions
-sidebar_position: 7
+sidebar_position: 20
 description: The exceptions Dirthara I18n throws, what each one means, and the context it carries.
 ---
 
@@ -25,6 +25,8 @@ cache keys, and prefixes, with control characters escaped in the message.
 | `PluralRulesException`                 | `RuntimeException`         | Intl cannot create the plural rules for a locale, fails to give a plural category, or gives one the package does not know. |
 | `InvalidCurrencyAmountException`       | `InvalidArgumentException` | An amount to format is `NAN`, `INF`, or `-INF`. Its context holds `locale`, `currency`, and `amount`. |
 | `CurrencyFormatterException`           | `RuntimeException`         | Intl cannot create a currency formatter for a locale and style, or fails to format an amount. |
+| `InvalidNumberException`               | `InvalidArgumentException` | A number to format is `NAN`, `INF`, or `-INF`, or an ordinal is not a whole number. |
+| `FormatterException`                   | `RuntimeException`         | Intl cannot create a formatter, or fails to format a value, in any formatter but the currency formatter. |
 
 ## Loader failures
 
@@ -77,3 +79,14 @@ entry, the entry's `path` and `cacheKey` are added to that context.
 | Intl fails to format an amount.                                    | `locale`, `currency`, `style`, `intlCode`, `intlMessage`   |
 
 The amount itself is not part of an exception's message or context, unless it is not a finite number.
+
+## Formatter failures
+
+`FormatterException` and `InvalidNumberException` carry the name of the formatter, such as `number`, in `formatter`.
+
+| Failure                                                            | Exception                 | Context                                                      |
+|--------------------------------------------------------------------|---------------------------|--------------------------------------------------------------|
+| Intl cannot create a formatter, such as for a locale code longer than the 156 characters `intl` accepts. | `FormatterException` | `formatter`, `locale`, `style`; the `IntlException` is the previous exception |
+| Intl fails to format a value.                                      | `FormatterException`      | `formatter`, `locale`, `style`, `intlCode`, `intlMessage`    |
+| A number is `NAN`, `INF`, or `-INF`.                                | `InvalidNumberException`  | `formatter`, `locale`, `number`                              |
+| An ordinal is not a whole number.                                  | `InvalidNumberException`  | `formatter`, `locale`, `number`                              |
