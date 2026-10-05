@@ -27,6 +27,26 @@ final class IcuDataTest extends TestCase
     }
 
     #[Test]
+    public function it_lists_the_bundles_of_a_locale_without_the_root(): void
+    {
+        $data = new IcuData();
+
+        self::assertSame(['sr_Latn_RS', 'sr_Latn', 'sr_RS', 'sr'], $data->candidates(new Locale('sr-Latn-RS')));
+        self::assertSame(['nl_NL', 'nl'], $data->candidates(new Locale('nl-NL')));
+        self::assertSame(['zz'], $data->candidates(new Locale('zz')));
+    }
+
+    #[Test]
+    public function it_reads_a_value_from_one_bundle(): void
+    {
+        $data = new IcuData();
+
+        self::assertSame('{0}、{1}', $data->stringFrom('ja', 'ICUDATA-lang', 'localeDisplayPattern', 'separator'));
+        self::assertNull($data->stringFrom('en_GB', 'ICUDATA-lang', 'localeDisplayPattern', 'separator'));
+        self::assertNull($data->stringFrom('zz', 'ICUDATA-lang', 'localeDisplayPattern', 'separator'));
+    }
+
+    #[Test]
     public function it_has_no_value_for_a_path_no_bundle_has(): void
     {
         $data = new IcuData();

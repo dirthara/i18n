@@ -9,6 +9,7 @@ use Dirthara\I18n\Locale;
 
 use function is_string;
 use function array_filter;
+use function array_values;
 
 /**
  * Reading nested ICU data through ResourceBundle does not apply ICU's locale fallback, so a value is looked up in the
@@ -20,31 +21,35 @@ final readonly class IcuData
 {
     public function string(Locale $locale, string $bundle, string ...$path): ?string
     {
-        $candidates = array_filter([
-            $locale->script !== null && $locale->region !== null
-                ? $locale->language . '_' . $locale->script . '_' . $locale->region
-                : null,
-            $locale->script !== null ? $locale->language . '_' . $locale->script : null,
-            $locale->region !== null ? $locale->language . '_' . $locale->region : null,
-            $locale->language,
-            'root',
-        ]);
-
-        foreach ($candidates as $candidate) {
-            $value = $this->lookup($candidate, $bundle, $path);
+        foreach ($this->candidates($locale) as $candidate) {
+            $value = $this->stringFrom($candidate, $bundle, ...$path);
 
             if ($value !== null) {
                 return $value;
             }
         }
 
-        return null;
+        return $this->stringFrom('root', $bundle, ...$path);
     }
 
     /**
-     * @param array<array-key, string> $path
+     * The bundles of a locale and its less specific forms, most specific first, without the root bundle.
+     *
+     * @return list<string>
      */
-    private function lookup(string $name, string $bundle, array $path): ?string
+    public function candidates(Locale $locale): array
+    {
+        return array_values(array_filter([
+            $locale->script !== null && $locale->region !== null
+                ? $locale->language . '_' . $locale->script . '_' . $locale->region
+                : null,
+            $locale->script !== null ? $locale->language . '_' . $locale->script : null,
+            $locale->region !== null ? $locale->language . '_' . $locale->region : null,
+            $locale->language,
+        ]));
+    }
+
+    public function stringFrom(string $name, string $bundle, string ...$path): ?string
     {
         $value = ResourceBundle::create($name, $bundle, fallback: false);
 
