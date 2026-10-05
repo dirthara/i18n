@@ -2,7 +2,7 @@
 id: installation
 title: Installation
 sidebar_position: 2
-description: Requirements and installation status for Dirthara I18n.
+description: Requirements, ICU data, and installing Dirthara I18n.
 ---
 
 ## Requirements
@@ -45,16 +45,11 @@ form, unit, or plural category it picks, on the ICU version they run with, and l
 
 ## Package installation
 
-Once published, install the package using Composer:
+Install the package using Composer:
 
 ```sh
 composer require dirthara/i18n
 ```
-
-:::caution
-There is no published release yet. The command above describes the intended
-installation after publication.
-:::
 
 For development, follow the Docker and Composer setup in the repository's
 [README](https://github.com/dirthara/i18n#readme). Development tooling

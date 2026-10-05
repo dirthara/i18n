@@ -6,8 +6,8 @@
 
 Internationalisation for the Dirthara framework: locales and currencies, translations with pluralisation, loaded from
 PHP and JSON files and kept in a compiled cache, and locale-aware formatting of numbers, money, percentages, lists,
-locale names, dates and times, durations, and relative times. The package has no release yet; `0.1.0` will be its
-first. Usage documentation lives in [`docs`](docs/intro.md) and is published on the Dirthara documentation site at
+locale names, dates and times, durations, and relative times. Usage documentation lives in [`docs`](docs/intro.md) and
+is published on the Dirthara documentation site at
 <https://dirthara.github.io/docs/>, which documents every package in the framework.
 
 ## Installation

@@ -10,8 +10,8 @@ pluralisation, loaded from PHP and JSON files and kept in a compiled cache; and 
 lists, locale names, dates and times, durations, and relative times the way a locale writes them.
 
 :::note
-The package has no release yet; 0.1.0 will be its first. See [the scope of 0.1](#scope-of-01) for what it contains and
-what is left for later.
+This is the documentation of the 0.1 release line. See [the scope of 0.1](#scope-of-01) for what it contains and what
+is left for later.
 :::
 
 ## Concepts
