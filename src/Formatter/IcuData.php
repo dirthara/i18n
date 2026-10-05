@@ -12,8 +12,7 @@ use function array_filter;
 use function array_values;
 
 /**
- * Reading nested ICU data through ResourceBundle does not apply ICU's locale fallback, so a value is looked up in the
- * locale's own bundle first, then in the bundles of its less specific forms, and last in the root bundle.
+ * ResourceBundle does not apply ICU's locale fallback to nested data, so the fallback is done here.
  *
  * @internal
  */
@@ -33,8 +32,6 @@ final readonly class IcuData
     }
 
     /**
-     * The bundles of a locale and its less specific forms, most specific first, without the root bundle.
-     *
      * @return list<string>
      */
     public function candidates(Locale $locale): array

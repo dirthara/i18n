@@ -79,8 +79,7 @@ final class RelativeDateTimeFormatter implements RelativeDateTimeFormatterContra
     }
 
     /**
-     * Each style of a field is tried in the locale's own bundle before a less specific bundle, because ICU's root
-     * bundle only aliases the shorter styles to the longer ones of the same locale.
+     * ICU's root bundle aliases a short style to the long style of the same locale, so styles are tried per locale.
      *
      * @param list<string> ...$paths
      */
