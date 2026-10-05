@@ -24,5 +24,5 @@ interface DateTimeFormatter
 
     public function formatDate(DateTimeInterface $dateTime, DateStyle $dateStyle = DateStyle::Medium): string;
 
-    public function formatTime(DateTimeInterface $dateTime, TimeStyle $timeStyle): string;
+    public function formatTime(DateTimeInterface $dateTime, TimeStyle $timeStyle = TimeStyle::Medium): string;
 }

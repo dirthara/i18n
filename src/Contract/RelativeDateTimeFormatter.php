@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Dirthara\I18n\Contract;
 
-use DateTimeInterface;
 use DateTimeZone;
-use Dirthara\I18n\Enum\RelativeDateTimeStyle;
+use DateTimeInterface;
 use Dirthara\I18n\Locale;
+use Dirthara\I18n\Enum\RelativeDateTimeStyle;
 
 interface RelativeDateTimeFormatter
 {
