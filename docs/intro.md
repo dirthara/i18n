@@ -9,9 +9,8 @@ Dirthara I18n provides internationalisation for the Dirthara framework: locales,
 translating translations, and formatting values for a locale.
 
 :::note
-The package is in early development. Translations can be loaded, cached, and translated from several loaders for one
-locale; overriding one loader's translations with another's, and locale fallback, are not implemented yet. Every
-formatter is implemented.
+The package has no release yet; 0.1.0 will be its first. See [the scope of 0.1](#scope-of-01) for what it contains and
+what is left for later.
 :::
 
 ## Concepts
@@ -29,8 +28,28 @@ formatter is implemented.
 | Factory     | Creates a formatter for a locale, for code that only learns the locale later.                            |
 
 Each of these is a separate responsibility. A loader reads a source and nothing else, caching wraps any loader, and the
-translator looks keys up in one catalogue and fills in placeholders. Falling back from one locale to
-another belongs to a layer that does not exist yet. No loader falls back from `nl-NL` to `nl` or to any other locale.
+translator looks keys up in one catalogue and fills in placeholders. No loader falls back from `nl-NL` to `nl` or to any
+other locale.
+
+## Scope of 0.1
+
+Version 0.1 contains:
+
+| Area         | What it contains                                                                                   |
+|--------------|----------------------------------------------------------------------------------------------------|
+| Values       | `Locale`, `Currency`, and `PluralRules` with the `PluralCategory` enum.                            |
+| Translations | Translation catalogues; the PHP, JSON, and combined loaders; the compiled translation cache; the translator, with plural translations. |
+| Formatters   | Number, percentage, currency, list, locale, date-time, duration, and relative date-time formatters, each with a factory. |
+
+These are not part of 0.1, and may come in a later version:
+
+| Not included                                   | Instead, for now                                                          |
+|------------------------------------------------|---------------------------------------------------------------------------|
+| Formatting measurements and units in general, such as `12 km` or `3 kg` | Only lengths of time, through the [duration formatter](formatting-durations.md). |
+| Naming timezones, such as `Central European Time` | The full and long styles of the [date-time formatter](formatting-dates-and-times.md) name the formatter's timezone. |
+| Falling back from one locale to another, such as from `nl-BE` to `nl` | Load and combine the catalogues of each locale you need yourself.         |
+| Letting one loader override another's translations | Give each source its own keys, with a [prefix](loading-translations.md#prefixes). |
+| A database translation loader                  | Implement [`TranslationLoader`](loading-translations.md#custom-loaders) for a database or a remote source; a loader of your own can be combined and cached like any other. |
 
 ## Pages
 
