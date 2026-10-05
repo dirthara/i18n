@@ -180,14 +180,19 @@ the entries of every other cache key, and the temporary files of writes still in
 or a cache key that has nothing cached does nothing. The next load for a forgotten locale reads the source again and
 stores the result.
 
-:::note
-OPcache does not compile a file modified less than `opcache.file_update_protection` seconds (2 by default) before the
-request started, so an entry is only served from OPcache from the requests after that. Until then, and in the request
-that wrote it, including an entry reads and parses the file. Measure the cache's speed after it has warmed up.
-:::
+## OPcache
 
-:::caution
-With `opcache.validate_timestamps` turned off, OPcache keeps serving the compiled version of a cache file that has
-been replaced or removed until OPcache is reset. Reset OPcache, or reload PHP, whenever you clear or rebuild the
-translation cache in such an environment.
-:::
+OPcache keeps the compiled version of a cache file by its path, so whether a replaced or removed entry is noticed depends
+on how OPcache is configured. The package never resets or invalidates OPcache itself; refreshing it is part of
+deploying or clearing translations.
+
+| Setting                          | Default | Effect on cache entries                                                      |
+|----------------------------------|---------|------------------------------------------------------------------------------|
+| `opcache.validate_timestamps`    | `1`     | `0` never checks files again: a replaced or removed entry is served from OPcache until OPcache is reset or PHP restarts. |
+| `opcache.revalidate_freq`        | `2`     | With timestamps validated, a file is checked at most once per this many seconds, so a replaced entry can be served in its old form for that long. `0` checks on every request. |
+| `opcache.file_update_protection` | `2`     | A file modified less than this many seconds before a request started is not cached, so a new entry is read and parsed until it is that old. |
+
+A forgotten or rewritten entry is therefore not necessarily seen at once: with the defaults, for up to about two seconds,
+and with `opcache.validate_timestamps` turned off, until OPcache is reset. Where translations have to change at a
+precise moment, reset OPcache, or reload PHP, as part of clearing or rebuilding the translation cache. Measure the
+cache's speed only after it has warmed up past `opcache.file_update_protection`.
