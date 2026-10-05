@@ -6,6 +6,7 @@ namespace Dirthara\I18n;
 
 use MessageFormatter;
 use Dirthara\I18n\Enum\PluralCategory;
+use Dirthara\I18n\Exception\PluralRulesException;
 
 final class PluralRules
 {
@@ -20,11 +21,31 @@ final class PluralRules
         public readonly Locale $locale,
     ) {}
 
+    /**
+     * @throws PluralRulesException
+     */
     public function category(int|float $count): PluralCategory
     {
         self::$formatters[$this->locale->code] ??= new MessageFormatter($this->locale->code, self::PATTERN);
 
-        return PluralCategory::tryFrom((string) self::$formatters[$this->locale->code]->format([$count]))
-        ?? PluralCategory::Other;
+        $formatter = self::$formatters[$this->locale->code];
+        $category = $formatter->format([$count]);
+
+        if ($category === false) {
+            throw PluralRulesException::formatFailed(
+                $this->locale,
+                $count,
+                $formatter->getErrorCode(),
+                $formatter->getErrorMessage(),
+            );
+        }
+
+        return (
+            PluralCategory::tryFrom($category) ?? throw PluralRulesException::unknownCategory(
+                $this->locale,
+                $count,
+                $category,
+            )
+        );
     }
 }

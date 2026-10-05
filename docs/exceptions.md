@@ -20,6 +20,7 @@ cache keys, and prefixes, with control characters escaped in the message.
 | `InvalidTranslationCatalogueException` | `InvalidArgumentException` | A catalogue is given a message that is not a string.    |
 | `TranslationLoaderException`           | `RuntimeException`         | A translation source cannot be read or is malformed.    |
 | `TranslationCacheException`            | `RuntimeException`         | A cache entry cannot be written, read, or removed, or is malformed. |
+| `PluralRulesException`                 | `RuntimeException`         | ICU fails to give a plural category, or gives one the package does not know. |
 
 ## Loader failures
 
@@ -59,3 +60,10 @@ entry, the entry's `path` and `cacheKey` are added to that context.
 | The entries of a cache key cannot all be listed or removed.        | `path`, `cacheKey`                     |
 
 `key` is always a translation key and `cacheKey` always a cache key.
+
+## Plural rule failures
+
+| Failure                                                            | Context                                         |
+|--------------------------------------------------------------------|-------------------------------------------------|
+| ICU fails to format a count into a plural category.                | `locale`, `count`, `intlCode`, `intlMessage`    |
+| ICU gives a category that is not a known `PluralCategory`.         | `locale`, `count`, `category`                   |
