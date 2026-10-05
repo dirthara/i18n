@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Formatter\Currency;
 
+use ValueError;
 use IntlException;
 use NumberFormatter;
 use Dirthara\I18n\Locale;
@@ -76,7 +77,9 @@ final class CurrencyFormatter implements CurrencyFormatterContract
                 CurrencyStyle::Name => NumberFormatter::CURRENCY_PLURAL,
                 CurrencyStyle::Cash => NumberFormatter::CASH_CURRENCY,
             });
-        } catch (IntlException $exception) {
+
+            // @mago-expect analysis:avoid-catching-error
+        } catch (IntlException|ValueError $exception) {
             throw CurrencyFormatterException::creationFailed($this->locale, $style, previous: $exception);
         }
 

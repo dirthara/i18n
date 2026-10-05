@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Tests\Formatter\Currency;
 
+use ValueError;
 use IntlException;
 use NumberFormatter;
 use ReflectionProperty;
@@ -165,6 +166,20 @@ final class CurrencyFormatterTest extends TestCase
             );
         } finally {
             $this->forgetFormatter('en-GB|Standard');
+        }
+    }
+
+    #[Test]
+    public function it_reports_a_language_intl_has_no_data_for(): void
+    {
+        try {
+            new CurrencyFormatter(new Locale('zz'))->format(1, new Currency('EUR'));
+            self::fail('Expected a CurrencyFormatterException.');
+        } catch (CurrencyFormatterException $exception) {
+            self::assertInstanceOf(I18nException::class, $exception);
+            self::assertSame('zz', $exception->context['locale']);
+            self::assertSame('Standard', $exception->context['style']);
+            self::assertInstanceOf(ValueError::class, $exception->getPrevious());
         }
     }
 

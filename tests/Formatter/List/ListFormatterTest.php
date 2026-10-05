@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dirthara\I18n\Tests\Formatter\List;
 
 use stdClass;
+use ValueError;
 use Dirthara\I18n\Locale;
 use PHPUnit\Framework\TestCase;
 use Dirthara\I18n\Enum\ListType;
@@ -152,6 +153,21 @@ final class ListFormatterTest extends TestCase
                 ['formatter' => 'list', 'locale' => $locale->code, 'style' => 'and-wide'],
                 $exception->context,
             );
+        }
+    }
+
+    #[Test]
+    public function it_reports_a_language_intl_has_no_data_for(): void
+    {
+        try {
+            new ListFormatter(new Locale('zz'))->format(['a', 'b']);
+            self::fail('Expected a FormatterException.');
+        } catch (FormatterException $exception) {
+            self::assertInstanceOf(I18nException::class, $exception);
+            self::assertSame('list', $exception->context['formatter']);
+            self::assertSame('zz', $exception->context['locale']);
+            self::assertSame('and-wide', $exception->context['style']);
+            self::assertInstanceOf(ValueError::class, $exception->getPrevious());
         }
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Tests\Formatter\Duration;
 
+use ValueError;
 use IntlException;
 use NumberFormatter;
 use MessageFormatter;
@@ -155,6 +156,21 @@ final class DurationFormatterTest extends TestCase
             self::assertSame($failing->getErrorCode(), $exception->context['intlCode']);
         } finally {
             $digits->setValue(null, $original);
+        }
+    }
+
+    #[Test]
+    public function it_reports_a_language_intl_has_no_data_for(): void
+    {
+        try {
+            new DurationFormatter(new Locale('zz'))->format(65, DurationStyle::Digital);
+            self::fail('Expected a FormatterException.');
+        } catch (FormatterException $exception) {
+            self::assertInstanceOf(I18nException::class, $exception);
+            self::assertSame('duration', $exception->context['formatter']);
+            self::assertSame('zz', $exception->context['locale']);
+            self::assertSame('digital-1', $exception->context['style']);
+            self::assertInstanceOf(ValueError::class, $exception->getPrevious());
         }
     }
 

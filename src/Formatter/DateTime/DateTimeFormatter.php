@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Formatter\DateTime;
 
+use ValueError;
 use DateTimeZone;
 use IntlException;
 use DateTimeInterface;
@@ -114,7 +115,9 @@ final class DateTimeFormatter implements DateTimeFormatterContract
                 },
                 $this->timezone,
             );
-        } catch (IntlException $exception) {
+
+            // @mago-expect analysis:avoid-catching-error
+        } catch (IntlException|ValueError $exception) {
             throw FormatterException::creationFailed(self::FORMATTER, $this->locale, $style, previous: $exception);
         }
 

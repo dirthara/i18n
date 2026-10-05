@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Tests\Formatter\Number;
 
+use ValueError;
 use IntlException;
 use ReflectionProperty;
 use Dirthara\I18n\Locale;
@@ -196,6 +197,21 @@ final class NumberFormatterTest extends TestCase
             );
         } finally {
             $this->forgetFormatter('en-GB|decimal');
+        }
+    }
+
+    #[Test]
+    public function it_reports_a_language_intl_has_no_data_for(): void
+    {
+        try {
+            new NumberFormatter(new Locale('zz'))->format(1);
+            self::fail('Expected a FormatterException.');
+        } catch (FormatterException $exception) {
+            self::assertInstanceOf(I18nException::class, $exception);
+            self::assertSame('number', $exception->context['formatter']);
+            self::assertSame('zz', $exception->context['locale']);
+            self::assertSame('decimal', $exception->context['style']);
+            self::assertInstanceOf(ValueError::class, $exception->getPrevious());
         }
     }
 

@@ -8,7 +8,8 @@ description: The exceptions Dirthara I18n throws, what each one means, and the c
 Every exception the package throws implements `Dirthara\I18n\Exception\I18nException`, so catching that interface
 catches anything from the package. Each one carries a `context` array with the details of the failure, and wraps the
 exception that caused it, such as a Flysystem, JSON, PHP, or Intl exception, as its previous exception. No Intl
-exception or Intl error leaves the package unwrapped.
+exception or Intl error leaves the package unwrapped, including the `ValueError` PHP 8.5 throws when creating a formatter
+for a locale whose language ICU has no data for.
 
 No message or context contains a translation. They can contain paths, locale codes, translation keys,
 cache keys, and prefixes, with control characters escaped in the message.
@@ -77,7 +78,7 @@ entry, the entry's `path` and `cacheKey` are added to that context.
 
 | Failure                                                            | Context                                                    |
 |--------------------------------------------------------------------|------------------------------------------------------------|
-| Intl cannot create the formatter, such as for a locale code longer than the 156 characters `intl` accepts. | `locale`, `style`; the `IntlException` is the previous exception |
+| Intl cannot create the formatter, such as for a locale whose language ICU has no data for, like `zz`, or a locale code longer than the 156 characters `intl` accepts. | `locale`, `style`; the `IntlException` or `ValueError` is the previous exception |
 | Intl fails to format an amount.                                    | `locale`, `currency`, `style`, `intlCode`, `intlMessage`   |
 
 The amount itself is not part of an exception's message or context, unless it is not a finite number.
@@ -88,7 +89,7 @@ The amount itself is not part of an exception's message or context, unless it is
 
 | Failure                                                            | Exception                 | Context                                                      |
 |--------------------------------------------------------------------|---------------------------|--------------------------------------------------------------|
-| Intl cannot create a formatter, such as for a locale code longer than the 156 characters `intl` accepts. | `FormatterException` | `formatter`, `locale`, `style`; the `IntlException` is the previous exception |
+| Intl cannot create a formatter, such as for a locale whose language ICU has no data for, like `zz`, or a locale code longer than the 156 characters `intl` accepts. | `FormatterException` | `formatter`, `locale`, `style`; the `IntlException` or `ValueError` is the previous exception |
 | Intl fails to format a value.                                      | `FormatterException`      | `formatter`, `locale`, `style`, `intlCode`, `intlMessage`    |
 | A number is `NAN`, `INF`, or `-INF`.                                | `InvalidNumberException`  | `formatter`, `locale`, `number`                              |
 | A duration is negative.                                            | `InvalidNumberException`  | `formatter`, `locale`, `number`                              |

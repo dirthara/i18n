@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Formatter\Duration;
 
+use ValueError;
 use IntlException;
 use MessageFormatter;
 use Dirthara\I18n\Locale;
@@ -165,7 +166,9 @@ final class DurationFormatter implements DurationFormatterContract
         if ($formatter === null) {
             try {
                 $formatter = new IntlNumberFormatter($this->locale->code, IntlNumberFormatter::DECIMAL);
-            } catch (IntlException $exception) {
+
+                // @mago-expect analysis:avoid-catching-error
+            } catch (IntlException|ValueError $exception) {
                 throw FormatterException::creationFailed(self::FORMATTER, $this->locale, $style, previous: $exception);
             }
 

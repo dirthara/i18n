@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Formatter\List;
 
+use ValueError;
 use IntlListFormatter;
 use Dirthara\I18n\Locale;
 use Dirthara\I18n\Enum\ListType;
@@ -12,7 +13,6 @@ use Dirthara\I18n\Exception\FormatterException;
 use Dirthara\I18n\Exception\InvalidListItemException;
 use Dirthara\I18n\Contract\ListFormatter as ListFormatterContract;
 
-use function strlen;
 use function is_string;
 use function strtolower;
 use function get_debug_type;
@@ -20,8 +20,6 @@ use function get_debug_type;
 final class ListFormatter implements ListFormatterContract
 {
     private const string FORMATTER = 'list';
-
-    private const int MAXIMUM_LOCALE_LENGTH = 156;
 
     /**
      * @var array<string, IntlListFormatter>
@@ -80,23 +78,26 @@ final class ListFormatter implements ListFormatterContract
             return $formatter;
         }
 
-        if (strlen($this->locale->code) > self::MAXIMUM_LOCALE_LENGTH) {
-            throw FormatterException::creationFailed(self::FORMATTER, $this->locale, $style);
+        try {
+            $formatter = new IntlListFormatter(
+                $this->locale->code,
+                match ($type) {
+                    ListType::And => IntlListFormatter::TYPE_AND,
+                    ListType::Or => IntlListFormatter::TYPE_OR,
+                    ListType::Units => IntlListFormatter::TYPE_UNITS,
+                },
+                match ($width) {
+                    ListWidth::Wide => IntlListFormatter::WIDTH_WIDE,
+                    ListWidth::Short => IntlListFormatter::WIDTH_SHORT,
+                    ListWidth::Narrow => IntlListFormatter::WIDTH_NARROW,
+                },
+            );
+
+            // @mago-expect analysis:avoid-catching-error
+        } catch (ValueError $exception) {
+            throw FormatterException::creationFailed(self::FORMATTER, $this->locale, $style, previous: $exception);
         }
 
-        $formatter = new IntlListFormatter(
-            $this->locale->code,
-            match ($type) {
-                ListType::And => IntlListFormatter::TYPE_AND,
-                ListType::Or => IntlListFormatter::TYPE_OR,
-                ListType::Units => IntlListFormatter::TYPE_UNITS,
-            },
-            match ($width) {
-                ListWidth::Wide => IntlListFormatter::WIDTH_WIDE,
-                ListWidth::Short => IntlListFormatter::WIDTH_SHORT,
-                ListWidth::Narrow => IntlListFormatter::WIDTH_NARROW,
-            },
-        );
         self::$formatters[$key] = $formatter;
 
         return $formatter;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Dirthara\I18n\Exception;
 
 use Throwable;
-use IntlException;
 use RuntimeException;
 use Dirthara\I18n\Locale;
 use Dirthara\I18n\Currency;
@@ -27,7 +26,7 @@ final class CurrencyFormatterException extends RuntimeException implements I18nE
         $this->context = $context;
     }
 
-    public static function creationFailed(Locale $locale, CurrencyStyle $style, IntlException $previous): self
+    public static function creationFailed(Locale $locale, CurrencyStyle $style, Throwable $previous): self
     {
         return new self(
             message: sprintf(

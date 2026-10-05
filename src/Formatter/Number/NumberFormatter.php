@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Formatter\Number;
 
+use ValueError;
 use IntlException;
 use Dirthara\I18n\Locale;
 use Dirthara\I18n\Enum\CompactNumberStyle;
@@ -129,7 +130,9 @@ final class NumberFormatter implements NumberFormatterContract
 
         try {
             $formatter = new IntlNumberFormatter($this->locale->code, $intlStyle);
-        } catch (IntlException $exception) {
+
+            // @mago-expect analysis:avoid-catching-error
+        } catch (IntlException|ValueError $exception) {
             throw FormatterException::creationFailed(self::FORMATTER, $this->locale, $style, previous: $exception);
         }
 

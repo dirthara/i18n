@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Tests\Formatter\DateTime;
 
+use ValueError;
 use DateTimeZone;
 use IntlException;
 use DateTimeImmutable;
@@ -227,6 +228,21 @@ final class DateTimeFormatterTest extends TestCase
             );
         } finally {
             $formatters->setValue(null, $original);
+        }
+    }
+
+    #[Test]
+    public function it_reports_a_language_intl_has_no_data_for(): void
+    {
+        try {
+            new DateTimeFormatter(new Locale('zz'), new DateTimeZone('UTC'))->formatDate($this->moment());
+            self::fail('Expected a FormatterException.');
+        } catch (FormatterException $exception) {
+            self::assertInstanceOf(I18nException::class, $exception);
+            self::assertSame('date-time', $exception->context['formatter']);
+            self::assertSame('zz', $exception->context['locale']);
+            self::assertSame('medium-none', $exception->context['style']);
+            self::assertInstanceOf(ValueError::class, $exception->getPrevious());
         }
     }
 

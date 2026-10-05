@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Formatter\Percentage;
 
+use ValueError;
 use IntlException;
 use NumberFormatter;
 use Dirthara\I18n\Locale;
@@ -68,7 +69,9 @@ final class PercentageFormatter implements PercentageFormatterContract
 
         try {
             $formatter = new NumberFormatter($this->locale->code, NumberFormatter::PERCENT);
-        } catch (IntlException $exception) {
+
+            // @mago-expect analysis:avoid-catching-error
+        } catch (IntlException|ValueError $exception) {
             throw FormatterException::creationFailed(self::FORMATTER, $this->locale, self::STYLE, previous: $exception);
         }
 

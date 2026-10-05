@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Tests\Formatter\Percentage;
 
+use ValueError;
 use IntlException;
 use NumberFormatter;
 use ReflectionProperty;
@@ -120,6 +121,21 @@ final class PercentageFormatterTest extends TestCase
             );
         } finally {
             $formatters->setValue(null, $original);
+        }
+    }
+
+    #[Test]
+    public function it_reports_a_language_intl_has_no_data_for(): void
+    {
+        try {
+            new PercentageFormatter(new Locale('zz'))->format(0.5);
+            self::fail('Expected a FormatterException.');
+        } catch (FormatterException $exception) {
+            self::assertInstanceOf(I18nException::class, $exception);
+            self::assertSame('percentage', $exception->context['formatter']);
+            self::assertSame('zz', $exception->context['locale']);
+            self::assertSame('percent', $exception->context['style']);
+            self::assertInstanceOf(ValueError::class, $exception->getPrevious());
         }
     }
 
