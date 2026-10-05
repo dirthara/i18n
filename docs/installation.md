@@ -7,13 +7,15 @@ description: Requirements and installation status for Dirthara I18n.
 
 ## Requirements
 
-PHP 8.5 or later within the PHP 8 series is required, with the `intl` extension.
+| Requirement                                                       | Version     | Used for                                           |
+|-------------------------------------------------------------------|-------------|----------------------------------------------------|
+| PHP                                                               | `^8.5`      | PHP 8.5 or a later PHP 8 release.                  |
+| The `intl` extension (`ext-intl`)                                 | any         | Locales, plural rules, and every formatter.        |
+| ICU, the library `intl` is built against (`lib-icu`)              | `>=67`      | List formatting and the unit formatting of durations, which ICU 67 introduced. |
+| [`league/flysystem`](https://flysystem.thephpleague.com/)         | `^3.0`      | Reading PHP and JSON translation files.             |
 
-The package depends on:
-
-| Package                                                     | Used for                                       |
-|-------------------------------------------------------------|------------------------------------------------|
-| [`league/flysystem`](https://flysystem.thephpleague.com/) `^3.0` | Reading PHP and JSON translation files.    |
+`league/flysystem` is the only Composer package the package depends on. Composer checks the PHP, `intl`, and ICU
+versions as platform requirements; `php -r 'echo INTL_ICU_VERSION;'` shows which ICU version your PHP uses.
 
 There is no database loader. To load translations from a database, implement
 [`TranslationLoader`](loading-translations.md#custom-loaders).

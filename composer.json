@@ -6,6 +6,7 @@
     "require": {
         "php": "^8.5",
         "ext-intl": "*",
+        "lib-icu": ">=67",
         "league/flysystem": "^3.0"
     },
     "require-dev": {

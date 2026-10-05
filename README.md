@@ -10,7 +10,8 @@ is in early development and has no release yet. Usage documentation lives in [`d
 
 ## Installation
 
-Requires PHP `^8.5` (PHP 8.5 or a later PHP 8 release) with the `intl` extension, and depends on `league/flysystem`. Install with:
+Requires PHP `^8.5` (PHP 8.5 or a later PHP 8 release) with the `intl` extension built against ICU 67 or later, and
+depends on `league/flysystem`. Install with:
 
 ```sh
 composer require dirthara/i18n
