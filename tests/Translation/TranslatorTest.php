@@ -202,6 +202,77 @@ final class TranslatorTest extends TestCase
     }
 
     #[Test]
+    public function it_knows_which_counts_it_has_a_plural_form_for(): void
+    {
+        $translator = new Translator(new TranslationCatalogue(new Locale('pl-PL'), [
+            'files.0' => 'Brak plików',
+            'files.one' => '{count} plik',
+            'files.few' => '{count} pliki',
+            'cart' => 'Koszyk',
+            'cart.items.few' => '{count} produkty',
+        ]));
+
+        self::assertTrue($translator->hasPlural('files', 0));
+        self::assertTrue($translator->hasPlural('files', 1));
+        self::assertTrue($translator->hasPlural('files', 2));
+        self::assertFalse($translator->hasPlural('files', 5));
+        self::assertFalse($translator->hasPlural('cart', 2));
+        self::assertTrue($translator->hasPlural('cart.items', 3));
+        self::assertFalse($translator->hasPlural('cart.items', 1));
+        self::assertFalse($translator->hasPlural('missing', 1));
+    }
+
+    #[Test]
+    public function it_has_a_plural_form_for_every_count_when_there_is_an_other_form(): void
+    {
+        $translator = $this->translator(['inbox.messages.other' => '{count} messages']);
+
+        self::assertTrue($translator->hasPlural('inbox.messages', 1));
+        self::assertTrue($translator->hasPlural('inbox.messages', 0));
+        self::assertTrue($translator->hasPlural('inbox.messages', 1.5));
+    }
+
+    #[Test]
+    public function it_keeps_has_for_exact_keys(): void
+    {
+        $translator = $this->translator([
+            'inbox.messages.one' => '{count} message',
+            'inbox.messages.other' => '{count} messages',
+        ]);
+
+        self::assertFalse($translator->has('inbox.messages'));
+        self::assertTrue($translator->has('inbox.messages.one'));
+        self::assertTrue($translator->hasPlural('inbox.messages', 2));
+    }
+
+    #[Test]
+    #[DataProvider('englishCounts')]
+    public function it_agrees_with_translate_plural_on_whether_a_form_exists(int|float $count, string $expected): void
+    {
+        $translator = $this->translator([
+            'inbox.messages.one' => 'You have {count} message.',
+            'inbox.messages.other' => 'You have {count} messages.',
+        ]);
+        $onlyOne = $this->translator(['inbox.messages.one' => 'You have {count} message.']);
+
+        self::assertTrue($translator->hasPlural('inbox.messages', $count));
+        self::assertSame($expected, $translator->translatePlural('inbox.messages', $count));
+        self::assertSame(
+            $onlyOne->hasPlural('inbox.messages', $count),
+            $onlyOne->translatePlural('inbox.messages', $count) !== 'inbox.messages',
+        );
+    }
+
+    #[Test]
+    public function it_selects_the_form_by_the_count_not_by_a_count_parameter(): void
+    {
+        $translator = $this->translator(['items.one' => 'One item ({count})', 'items.other' => '{count} items']);
+
+        self::assertSame('One item (one)', $translator->translatePlural('items', 1, ['count' => 'one']));
+        self::assertSame('many items', $translator->translatePlural('items', 2, ['count' => 'many']));
+    }
+
+    #[Test]
     public function it_fills_in_the_count_unless_a_count_parameter_is_given(): void
     {
         $translator = $this->translator(['visitors.other' => '{count} visitors on {site}']);

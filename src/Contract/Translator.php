@@ -21,4 +21,6 @@ interface Translator
     public function translatePlural(string $key, int|float $count, array $parameters = []): string;
 
     public function has(string $key): bool;
+
+    public function hasPlural(string $key, int|float $count): bool;
 }

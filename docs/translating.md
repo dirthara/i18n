@@ -46,7 +46,9 @@ another locale has it.
 
 `translate()` returns the key itself when the catalogue has no translation for it, so a missing translation shows up as
 the key, such as `validation.required`, rather than breaking the page. Use `has()` to find out whether a translation
-exists. A translation that is the empty string exists, and `translate()` returns the empty string for it.
+exists: it checks the exact key `translate()` looks up, and nothing else, so it is `false` for a key that only has plural
+forms, such as `inbox.messages`. A translation that is the empty string exists, and `translate()` returns the empty
+string for it.
 
 ## Parameters
 
@@ -130,6 +132,18 @@ text, such as a number already formatted for the locale:
 
 ```php
 $translator->translatePlural('visitors', 1500, ['count' => '1,500']);   // '1,500 visitors'
+```
+
+The form is always chosen by the count argument, never by a `count` parameter.
+
+`hasPlural()` finds out whether `translatePlural()` has a translation for a count, by the same steps: it is `true` when
+the exact count, the count's category, or `other` exists, and `false` when `translatePlural()` would return the key.
+The key on its own, without a form, is not a plural form:
+
+```php
+// 'inbox.messages.one' and 'inbox.messages.other' exist, 'inbox.messages' does not
+$translator->has('inbox.messages');           // false
+$translator->hasPlural('inbox.messages', 2);  // true
 ```
 
 `Dirthara\I18n\PluralRules` gives the plural category of a count for a locale on its own, as a

@@ -37,17 +37,26 @@ final readonly class Translator implements TranslatorContract
      */
     public function translatePlural(string $key, int|float $count, array $parameters = []): string
     {
-        $message =
-            $this->catalogue->get($key . '.' . $count) ?? $this->catalogue->get(
-                $key . '.' . $this->pluralRules->category($count)->value,
-            ) ?? $this->catalogue->get($key . '.' . PluralCategory::Other->value) ?? $key;
-
-        return $this->replace($message, $parameters + ['count' => $count]);
+        return $this->replace($this->pluralMessage($key, $count) ?? $key, $parameters + ['count' => $count]);
     }
 
     public function has(string $key): bool
     {
         return $this->catalogue->has($key);
+    }
+
+    public function hasPlural(string $key, int|float $count): bool
+    {
+        return $this->pluralMessage($key, $count) !== null;
+    }
+
+    private function pluralMessage(string $key, int|float $count): ?string
+    {
+        return (
+            $this->catalogue->get($key . '.' . $count) ?? $this->catalogue->get(
+                $key . '.' . $this->pluralRules->category($count)->value,
+            ) ?? $this->catalogue->get($key . '.' . PluralCategory::Other->value)
+        );
     }
 
     /**
