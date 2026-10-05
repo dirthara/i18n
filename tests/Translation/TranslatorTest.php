@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use League\Flysystem\Filesystem;
 use PHPUnit\Framework\Attributes\Test;
 use Dirthara\I18n\Translation\Translator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Dirthara\I18n\Translation\PhpTranslationCache;
 use Dirthara\I18n\Translation\PhpTranslationLoader;
 use Dirthara\I18n\Translation\TranslationCatalogue;
@@ -132,6 +133,120 @@ final class TranslatorTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('englishCounts')]
+    public function it_translates_the_plural_form_of_a_count(int|float $count, string $expected): void
+    {
+        $translator = $this->translator([
+            'inbox.messages.one' => 'You have {count} message.',
+            'inbox.messages.other' => 'You have {count} messages.',
+        ]);
+
+        self::assertSame($expected, $translator->translatePlural('inbox.messages', $count));
+    }
+
+    #[Test]
+    public function it_translates_the_plural_forms_of_the_locale(): void
+    {
+        $translator = new Translator(new TranslationCatalogue(new Locale('pl-PL'), [
+            'files.one' => '{count} plik',
+            'files.few' => '{count} pliki',
+            'files.many' => '{count} plików',
+            'files.other' => '{count} pliku',
+        ]));
+
+        self::assertSame('1 plik', $translator->translatePlural('files', 1));
+        self::assertSame('22 pliki', $translator->translatePlural('files', 22));
+        self::assertSame('5 plików', $translator->translatePlural('files', 5));
+        self::assertSame('1.5 pliku', $translator->translatePlural('files', 1.5));
+    }
+
+    #[Test]
+    public function it_prefers_the_message_for_an_exact_count(): void
+    {
+        $translator = $this->translator([
+            'inbox.messages.0' => 'You have no messages.',
+            'inbox.messages.1' => 'You have exactly one message.',
+            'inbox.messages.-1' => 'You owe a message.',
+            'inbox.messages.1.5' => 'You have one and a half messages.',
+            'inbox.messages.one' => 'You have {count} message.',
+            'inbox.messages.other' => 'You have {count} messages.',
+        ]);
+
+        self::assertSame('You have no messages.', $translator->translatePlural('inbox.messages', 0));
+        self::assertSame('You have no messages.', $translator->translatePlural('inbox.messages', 0.0));
+        self::assertSame('You have exactly one message.', $translator->translatePlural('inbox.messages', 1));
+        self::assertSame('You owe a message.', $translator->translatePlural('inbox.messages', -1));
+        self::assertSame('You have one and a half messages.', $translator->translatePlural('inbox.messages', 1.5));
+        self::assertSame('You have 2 messages.', $translator->translatePlural('inbox.messages', 2));
+    }
+
+    #[Test]
+    public function it_falls_back_to_the_other_form(): void
+    {
+        $translator = new Translator(new TranslationCatalogue(new Locale('pl-PL'), [
+            'files.one' => '{count} plik',
+            'files.other' => '{count} pliku',
+        ]));
+
+        self::assertSame('5 pliku', $translator->translatePlural('files', 5));
+    }
+
+    #[Test]
+    public function it_returns_the_key_it_has_no_plural_form_for(): void
+    {
+        $translator = $this->translator(['inbox.messages.one' => 'You have {count} message.', 'inbox' => 'Inbox']);
+
+        self::assertSame('inbox.messages', $translator->translatePlural('inbox.messages', 2));
+        self::assertSame('inbox', $translator->translatePlural('inbox', 2));
+        self::assertSame('You have 1 messages', $translator->translatePlural('You have {count} messages', 1));
+    }
+
+    #[Test]
+    public function it_fills_in_the_count_unless_a_count_parameter_is_given(): void
+    {
+        $translator = $this->translator(['visitors.other' => '{count} visitors on {site}']);
+
+        self::assertSame('1500 visitors on Dirthara', $translator->translatePlural('visitors', 1500, [
+            'site' => 'Dirthara',
+        ]));
+        self::assertSame('1,500 visitors on Dirthara', $translator->translatePlural('visitors', 1500, [
+            'count' => '1,500',
+            'site' => 'Dirthara',
+        ]));
+    }
+
+    #[Test]
+    public function it_translates_plural_forms_from_php_and_json_translations(): void
+    {
+        $filesystem = new Filesystem(new InMemoryFilesystemAdapter());
+        $filesystem->write('translations/en-GB/inbox.php', <<<'PHP'
+            <?php
+
+            return [
+                'messages' => [
+                    '0' => 'You have no messages.',
+                    'one' => 'You have {count} message.',
+                    'other' => 'You have {count} messages.',
+                ],
+            ];
+            PHP);
+        $filesystem->write(
+            'translations/en-GB.json',
+            '{"cart.items.one": "{count} item in your cart", "cart.items.other": "{count} items in your cart"}',
+        );
+        $translator = new Translator(new CombinedTranslationLoader(
+            new PhpTranslationLoader($filesystem, 'translations', prefix: 'app'),
+            new JsonTranslationLoader($filesystem, 'translations'),
+        )->load(new Locale('en-GB')));
+
+        self::assertSame('You have no messages.', $translator->translatePlural('app.inbox.messages', 0));
+        self::assertSame('You have 1 message.', $translator->translatePlural('app.inbox.messages', 1));
+        self::assertSame('You have 7 messages.', $translator->translatePlural('app.inbox.messages', 7));
+        self::assertSame('1 item in your cart', $translator->translatePlural('cart.items', 1));
+        self::assertSame('3 items in your cart', $translator->translatePlural('cart.items', 3));
+    }
+
+    #[Test]
     public function it_translates_from_a_cached_combination_of_php_and_json_translations(): void
     {
         $filesystem = new Filesystem(new InMemoryFilesystemAdapter());
@@ -161,6 +276,18 @@ final class TranslatorTest extends TestCase
         self::assertSame('Required.', $translator->translate('validation.required'));
         self::assertSame('Log out', $translator->translate('Log out'));
         self::assertSame('These credentials do not match.', $translator->translate('auth.failed'));
+    }
+
+    /**
+     * @return iterable<string, array{int|float, string}>
+     */
+    public static function englishCounts(): iterable
+    {
+        yield 'zero' => [0, 'You have 0 messages.'];
+        yield 'one' => [1, 'You have 1 message.'];
+        yield 'two' => [2, 'You have 2 messages.'];
+        yield 'fraction' => [1.5, 'You have 1.5 messages.'];
+        yield 'negative one' => [-1, 'You have -1 message.'];
     }
 
     /**

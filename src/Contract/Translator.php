@@ -15,5 +15,10 @@ interface Translator
      */
     public function translate(string $key, array $parameters = []): string;
 
+    /**
+     * @param array<string, string|int|float> $parameters
+     */
+    public function translatePlural(string $key, int|float $count, array $parameters = []): string;
+
     public function has(string $key): bool;
 }

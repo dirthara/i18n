@@ -23,7 +23,7 @@ locale; overriding one loader's translations with another's, and locale fallback
 | Prefix      | An optional namespace a loader puts in front of every key it loads, such as `dirthara.validation`.      |
 | Combined loader | Combines the catalogues of several loaders into one, rejecting a key two of them produce.          |
 | Cache       | Stores catalogues as compiled PHP files, so a request does not read the source again.                    |
-| Translator  | Translates keys from one catalogue, filling in placeholders.                                             |
+| Translator  | Translates keys from one catalogue, picking plural forms and filling in placeholders.                    |
 
 Each of these is a separate responsibility. A loader reads a source and nothing else, caching wraps any loader, and the
 translator looks keys up in one catalogue and fills in placeholders. Falling back from one locale to
@@ -35,5 +35,5 @@ another belongs to a layer that does not exist yet. No loader falls back from `n
 - [Loading translations](loading-translations.md): catalogues, the PHP, JSON, and database loaders, prefixes, and custom
   loaders.
 - [Caching translations](caching-translations.md): the compiled PHP cache, its file format, and invalidating it.
-- [Translating](translating.md): the translator, missing translations, and placeholders.
+- [Translating](translating.md): the translator, missing translations, placeholders, and plurals.
 - [Exceptions](exceptions.md): what each exception means and the context it carries.

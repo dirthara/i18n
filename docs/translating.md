@@ -2,7 +2,7 @@
 id: translating
 title: Translating
 sidebar_position: 5
-description: Translating keys from a translation catalogue, and filling placeholders with parameters.
+description: Translating keys from a translation catalogue, plural forms, and filling placeholders with parameters.
 ---
 
 `Dirthara\I18n\Translation\Translator` implements `Dirthara\I18n\Contract\Translator`. It translates keys from one
@@ -69,4 +69,74 @@ $translator->translate('inbox.summary', ['name' => 'Ada', 'count' => 3]);
 
 Parameters are also applied to the key that is returned when a translation is missing.
 
-There is no plural or select syntax: a message is text with placeholders, nothing more.
+A message is text with placeholders and nothing more; there is no syntax inside a message. Plural forms are separate
+keys; see [plurals](#plurals).
+
+## Plurals
+
+`translatePlural()` translates a message whose wording depends on a number. Each plural form is a key of its own, under
+the message's key, so plural forms are written like any other translation:
+
+```php
+// translations/en-GB/inbox.php
+return [
+    'messages' => [
+        '0' => 'You have no messages.',
+        'one' => 'You have {count} message.',
+        'other' => 'You have {count} messages.',
+    ],
+];
+```
+
+```json
+{
+    "cart.items.one": "{count} item in your cart",
+    "cart.items.other": "{count} items in your cart"
+}
+```
+
+```php
+$translator->translatePlural('inbox.messages', 0);   // 'You have no messages.'
+$translator->translatePlural('inbox.messages', 1);   // 'You have 1 message.'
+$translator->translatePlural('inbox.messages', 7);   // 'You have 7 messages.'
+$translator->translatePlural('cart.items', 3);       // '3 items in your cart'
+```
+
+The key is the message's key without a form, after any [prefix](loading-translations.md#prefixes): with the prefix
+`app`, the PHP file above is `app.inbox.messages`. `translatePlural()` uses the first of these that exists:
+
+1. **The exact count**, such as `inbox.messages.0`. A message for one particular number takes precedence over its plural
+   form, which is how English gets a separate text for nothing: in English, 0 belongs to `other`.
+2. **The plural category** of the count in the translator's locale, such as `inbox.messages.one`.
+3. **The `other` form**, such as `inbox.messages.other`.
+4. **The key itself**, as for a [missing translation](#missing-translations).
+
+The plural categories are CLDR's: `zero`, `one`, `two`, `few`, `many`, and `other`. Which numbers belong to which
+category depends on the language, and comes from ICU through the `intl` extension:
+
+| Language | Categories                              | Examples                                     |
+|----------|-----------------------------------------|----------------------------------------------|
+| English  | `one`, `other`                          | 1 is `one`; 0, 2, and 1.5 are `other`        |
+| French   | `one`, `many`, `other`                  | 0, 1, and 1.5 are `one`                      |
+| Polish   | `one`, `few`, `many`, `other`           | 1 is `one`, 22 is `few`, 5 is `many`         |
+| Arabic   | `zero`, `one`, `two`, `few`, `many`, `other` | 0, 1, 2, 3, 11, and 100 are each a different one |
+| Japanese | `other`                                 | every number is `other`                      |
+
+Write a form for each category the language uses, and always an `other` form, which every language has and which is
+used when a category's form is missing.
+
+`{count}` in a plural message is the count, converted as PHP converts numbers. Pass a `count` parameter to use another
+text, such as a number already formatted for the locale:
+
+```php
+$translator->translatePlural('visitors', 1500, ['count' => '1,500']);   // '1,500 visitors'
+```
+
+`Dirthara\I18n\PluralRules` gives the plural category of a count for a locale on its own, as a
+`Dirthara\I18n\Enum\PluralCategory`:
+
+```php
+use Dirthara\I18n\PluralRules;
+
+new PluralRules(new Locale('pl-PL'))->category(5);   // PluralCategory::Many
+```
