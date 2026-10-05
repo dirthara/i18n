@@ -27,6 +27,7 @@ cache keys, and prefixes, with control characters escaped in the message.
 | `CurrencyFormatterException`           | `RuntimeException`         | Intl cannot create a currency formatter for a locale and style, or fails to format an amount. |
 | `InvalidNumberException`               | `InvalidArgumentException` | A number to format is `NAN`, `INF`, or `-INF`, or an ordinal is not a whole number. |
 | `InvalidListItemException`             | `InvalidArgumentException` | An item of a list to format is not a string. Its context holds `formatter`, `locale`, `position`, and `type`. |
+| `InvalidDateTimeStyleException`        | `InvalidArgumentException` | A date-time formatter is asked to format neither a date nor a time. Its context holds `formatter` and `locale`. |
 | `FormatterException`                   | `RuntimeException`         | Intl cannot create a formatter, or fails to format a value, in any formatter but the currency formatter. |
 
 ## Loader failures
