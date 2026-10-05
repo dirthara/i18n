@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Formatter\Locale;
 
-use ResourceBundle;
 use Dirthara\I18n\Locale;
 use Locale as IntlLocale;
+use Dirthara\I18n\Formatter\IcuData;
 use Dirthara\I18n\Exception\FormatterException;
 use Dirthara\I18n\Contract\LocaleFormatter as LocaleFormatterContract;
 
 use function count;
 use function strtr;
 use function implode;
-use function is_string;
 use function strtoupper;
 use function array_shift;
 use function str_replace;
-use function array_filter;
 use function intl_get_error_code;
 use function intl_get_error_message;
 
@@ -129,31 +127,6 @@ final readonly class LocaleFormatter implements LocaleFormatterContract
 
     private function separator(): string
     {
-        $candidates = array_filter([
-            $this->locale->script !== null && $this->locale->region !== null
-                ? $this->locale->language . '_' . $this->locale->script . '_' . $this->locale->region
-                : null,
-            $this->locale->script !== null ? $this->locale->language . '_' . $this->locale->script : null,
-            $this->locale->region !== null ? $this->locale->language . '_' . $this->locale->region : null,
-            $this->locale->language,
-        ]);
-
-        foreach ($candidates as $candidate) {
-            $separator = $this->separatorOf($candidate);
-
-            if ($separator !== null) {
-                return $separator;
-            }
-        }
-
-        return $this->separatorOf('root') ?? '{0}, {1}';
-    }
-
-    private function separatorOf(string $bundle): ?string
-    {
-        $pattern = ResourceBundle::create($bundle, 'ICUDATA-lang', fallback: false)?->get('localeDisplayPattern');
-        $separator = $pattern instanceof ResourceBundle ? $pattern->get('separator') : null;
-
-        return is_string($separator) ? $separator : null;
+        return new IcuData()->string($this->locale, 'ICUDATA-lang', 'localeDisplayPattern', 'separator') ?? '{0}, {1}';
     }
 }
