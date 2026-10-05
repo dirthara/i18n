@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n;
 
+use IntlException;
 use MessageFormatter;
 use Dirthara\I18n\Enum\PluralCategory;
 use Dirthara\I18n\Exception\PluralRulesException;
@@ -35,9 +36,7 @@ final class PluralRules
             throw InvalidPluralCountException::notFinite($this->locale, $count);
         }
 
-        self::$formatters[$this->locale->code] ??= new MessageFormatter($this->locale->code, self::PATTERN);
-
-        $formatter = self::$formatters[$this->locale->code];
+        $formatter = $this->formatter();
         $category = $formatter->format([$count]);
 
         if ($category === false) {
@@ -56,5 +55,27 @@ final class PluralRules
                 $category,
             )
         );
+    }
+
+    /**
+     * @throws PluralRulesException
+     */
+    private function formatter(): MessageFormatter
+    {
+        $formatter = self::$formatters[$this->locale->code] ?? null;
+
+        if ($formatter !== null) {
+            return $formatter;
+        }
+
+        try {
+            $formatter = new MessageFormatter($this->locale->code, self::PATTERN);
+        } catch (IntlException $exception) {
+            throw PluralRulesException::creationFailed($this->locale, previous: $exception);
+        }
+
+        self::$formatters[$this->locale->code] = $formatter;
+
+        return $formatter;
     }
 }

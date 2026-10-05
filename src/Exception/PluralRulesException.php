@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dirthara\I18n\Exception;
 
 use Throwable;
+use IntlException;
 use RuntimeException;
 use Dirthara\I18n\Locale;
 
@@ -22,6 +23,15 @@ final class PluralRulesException extends RuntimeException implements I18nExcepti
         parent::__construct($message, $code, $previous);
 
         $this->context = $context;
+    }
+
+    public static function creationFailed(Locale $locale, IntlException $previous): self
+    {
+        return new self(
+            message: sprintf('Unable to create the plural rules for locale "%s".', $locale->code),
+            previous: $previous,
+            context: ['locale' => $locale->code],
+        );
     }
 
     public static function formatFailed(Locale $locale, int|float $count, int $intlCode, string $intlMessage): self

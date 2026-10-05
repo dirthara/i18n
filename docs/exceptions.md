@@ -7,7 +7,8 @@ description: The exceptions Dirthara I18n throws, what each one means, and the c
 
 Every exception the package throws implements `Dirthara\I18n\Exception\I18nException`, so catching that interface
 catches anything from the package. Each one carries a `context` array with the details of the failure, and wraps the
-exception that caused it, such as a Flysystem, JSON, or PHP exception, as its previous exception.
+exception that caused it, such as a Flysystem, JSON, PHP, or Intl exception, as its previous exception. No Intl
+exception or Intl error leaves the package unwrapped.
 
 No message or context contains a translation. They can contain paths, locale codes, translation keys,
 cache keys, and prefixes, with control characters escaped in the message.
@@ -21,7 +22,7 @@ cache keys, and prefixes, with control characters escaped in the message.
 | `TranslationLoaderException`           | `RuntimeException`         | A translation source cannot be read or is malformed.    |
 | `TranslationCacheException`            | `RuntimeException`         | A cache entry cannot be written, read, or removed, or is malformed. |
 | `InvalidPluralCountException`          | `InvalidArgumentException` | A plural count is `NAN`, `INF`, or `-INF`. Its context holds `locale` and `count`. |
-| `PluralRulesException`                 | `RuntimeException`         | ICU fails to give a plural category, or gives one the package does not know. |
+| `PluralRulesException`                 | `RuntimeException`         | Intl cannot create the plural rules for a locale, fails to give a plural category, or gives one the package does not know. |
 
 ## Loader failures
 
@@ -62,5 +63,6 @@ entry, the entry's `path` and `cacheKey` are added to that context.
 
 | Failure                                                            | Context                                         |
 |--------------------------------------------------------------------|-------------------------------------------------|
+| Intl cannot create the plural rules, such as for a locale code longer than the 156 characters `intl` accepts. | `locale`; the `IntlException` is the previous exception |
 | ICU fails to format a count into a plural category.                | `locale`, `count`, `intlCode`, `intlMessage`    |
 | ICU gives a category that is not a known `PluralCategory`.         | `locale`, `count`, `category`                   |

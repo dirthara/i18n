@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Tests;
 
+use IntlException;
 use MessageFormatter;
 use ReflectionProperty;
 use Dirthara\I18n\Locale;
@@ -13,6 +14,9 @@ use Dirthara\I18n\Enum\PluralCategory;
 use PHPUnit\Framework\Attributes\Test;
 use Dirthara\I18n\Exception\I18nException;
 use PHPUnit\Framework\Attributes\DataProvider;
+
+use function sprintf;
+
 use Dirthara\I18n\Exception\PluralRulesException;
 use Dirthara\I18n\Exception\InvalidPluralCountException;
 use Dirthara\I18n\Tests\Fixtures\FailingMessageFormatter;
@@ -69,6 +73,31 @@ final class PluralRulesTest extends TestCase
                 $exception->getMessage(),
             );
             self::assertSame(['locale' => 'en-GB', 'count' => $reported], $exception->context);
+        }
+    }
+
+    #[Test]
+    public function it_reports_plural_rules_intl_cannot_create(): void
+    {
+        $code = 'en';
+
+        for ($variant = 0; $variant < 18; $variant++) {
+            $code .= sprintf('-v%07d', $variant);
+        }
+
+        $locale = new Locale($code);
+
+        try {
+            new PluralRules($locale)->category(1);
+            self::fail('Expected a PluralRulesException.');
+        } catch (PluralRulesException $exception) {
+            self::assertInstanceOf(I18nException::class, $exception);
+            self::assertSame(
+                'Unable to create the plural rules for locale "' . $locale->code . '".',
+                $exception->getMessage(),
+            );
+            self::assertSame(['locale' => $locale->code], $exception->context);
+            self::assertInstanceOf(IntlException::class, $exception->getPrevious());
         }
     }
 
