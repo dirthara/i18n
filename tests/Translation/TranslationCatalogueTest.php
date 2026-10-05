@@ -28,6 +28,19 @@ final class TranslationCatalogueTest extends TestCase
     }
 
     #[Test]
+    public function it_trusts_messages_without_checking_them(): void
+    {
+        $locale = new Locale('en-GB');
+
+        $catalogue = TranslationCatalogue::trusted($locale, ['' => 'Not checked', 'welcome' => 'Welcome']);
+
+        self::assertSame($locale, $catalogue->locale);
+        self::assertSame(['' => 'Not checked', 'welcome' => 'Welcome'], $catalogue->messages);
+        self::assertTrue($catalogue->has(''));
+        self::assertSame('Welcome', $catalogue->get('welcome'));
+    }
+
+    #[Test]
     public function it_finds_a_translation_by_its_exact_key(): void
     {
         $catalogue = new TranslationCatalogue(new Locale('en-GB'), [

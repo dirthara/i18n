@@ -14,12 +14,12 @@ use Dirthara\I18n\Translation\TranslationCatalogue;
 use Dirthara\I18n\Tests\Fixtures\TemporaryDirectory;
 use Dirthara\I18n\Translation\JsonTranslationLoader;
 use Dirthara\I18n\Tests\Fixtures\TranslationDatabase;
-use Dirthara\I18n\Exception\TranslationCacheException;
 use Dirthara\I18n\Translation\CachedTranslationLoader;
 use Dirthara\I18n\Exception\TranslationLoaderException;
 use Dirthara\I18n\Translation\DatabaseTranslationLoader;
 use League\Flysystem\InMemory\InMemoryFilesystemAdapter;
 use Dirthara\I18n\Tests\Fixtures\CountingTranslationLoader;
+use Dirthara\I18n\Exception\InvalidTranslationCatalogueException;
 
 use function hash;
 use function file_put_contents;
@@ -169,8 +169,8 @@ final class CachedTranslationLoaderTest extends TestCase
 
         try {
             $loader->load(new Locale('en-GB'));
-            self::fail('Expected a TranslationCacheException.');
-        } catch (TranslationCacheException $exception) {
+            self::fail('Expected an InvalidTranslationCatalogueException.');
+        } catch (InvalidTranslationCatalogueException $exception) {
             self::assertSame('application', $exception->context['cacheKey']);
         }
 

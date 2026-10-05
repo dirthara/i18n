@@ -44,6 +44,10 @@ catalogue. `$messages` is an `array<string, string>`: a key that breaks the [key
 not a string, throws an `InvalidTranslationCatalogueException`. A catalogue does not know which source its messages
 came from.
 
+`TranslationCatalogue::trusted($locale, $messages)` builds a catalogue without checking its messages. It is meant for
+messages that were checked before, such as a [trusted cache entry](caching-translations.md#trusting-entries); a
+catalogue built from anything else should use the constructor.
+
 ## Translation source rules
 
 These rules hold for every loader, for catalogues built by hand, and for the cache.
@@ -84,13 +88,13 @@ Within one source, a loader rejects a key it produces twice, where it can detect
 to the same key, or two database rows for the same locale and key. Two different loaders can still produce the same key
 for one locale, such as an application and a package that both define `validation.required`.
 
-Combining the catalogues of several loaders is not implemented yet. When it is, it follows these rules:
+[Combining loaders](#combining-loaders) follows these rules:
 
-- **By default, a key that two loaders produce is an error.**
-- **Overriding is opt-in.** One loader's translation replaces another's only when the caller asks for an override
-  policy.
-- **Precedence comes from the order the caller gives the loaders in.** It never depends on the order files are listed
-  in or rows are returned in.
+- **A key that two loaders produce is an error.** This is the only behaviour available now.
+- **Overriding will be opt-in.** Once it is supported, one loader's translation replaces another's only when the
+  caller asks for an override policy.
+- **Precedence will come from the order the caller gives the loaders in.** It never depends on the order files are
+  listed in or rows are returned in.
 - **A catalogue stays unaware of where its messages came from.** Combining happens outside it.
 
 ## Prefixes
@@ -253,6 +257,36 @@ to follow the [key rules](#keys) once the prefix is applied. A key that appears 
 decide which one wins. A failure in the database, such as a missing table, is reported as a
 `TranslationLoaderException` with the database's exception as its previous exception, so a caller never has to catch a
 `dirthara/database` exception. Neither the message nor the context of an exception contains a translation.
+
+## Combining loaders
+
+`Dirthara\I18n\Translation\CombinedTranslationLoader` is a loader made of other loaders. It loads the locale from each
+of them and returns one catalogue with all their translations, so PHP files, JSON files, a database table, and custom
+loaders can be used as one source.
+
+```php
+use Dirthara\I18n\Translation\CombinedTranslationLoader;
+
+$loader = new CombinedTranslationLoader(
+    new PhpTranslationLoader($filesystem, 'translations'),
+    new JsonTranslationLoader($filesystem, 'translations'),
+    new DatabaseTranslationLoader($database->using(), prefix: 'content'),
+);
+```
+
+A key that two of its loaders produce is an error: `load()` throws a `TranslationLoaderException` that names the key and
+the two loaders, by their position, or by their name when they are passed with string keys, such as
+`...['application' => $applicationLoader, 'package' => $packageLoader]`. Which loader comes first never decides which
+translation is used. Give each source's keys their own namespace, with a [prefix](#prefixes) or with file names, so
+they do not collide. A loader that returns a catalogue for another locale than requested is an error too.
+
+:::note
+Letting one loader override another's translations is not supported yet. When it is, it will be a choice the caller
+makes explicitly, with precedence following the order of the loaders.
+:::
+
+A combined loader is a loader like any other: it can be [cached](caching-translations.md) as one entry, combined again
+in another combined loader, or loaded for a [translator](translating.md).
 
 ## Custom loaders
 

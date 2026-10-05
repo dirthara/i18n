@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Translation;
 
+use ReflectionClass;
 use Dirthara\I18n\Locale;
 use Dirthara\I18n\Exception\InvalidTranslationCatalogueException;
 
@@ -27,7 +28,6 @@ final readonly class TranslationCatalogue
         array $messages,
     ) {
         $keys = new TranslationKeyRule();
-        $validated = [];
 
         // @mago-expect analysis:mixed-assignment
         foreach ($messages as $key => $message) {
@@ -38,11 +38,24 @@ final readonly class TranslationCatalogue
             if (!is_string($message)) {
                 throw InvalidTranslationCatalogueException::nonStringMessage($locale, $key);
             }
-
-            $validated[$key] = $message;
         }
 
-        $this->messages = $validated;
+        /** @var array<string, string> $messages */
+        $this->messages = $messages;
+    }
+
+    /**
+     * @param array<string, string> $messages
+     */
+    public static function trusted(Locale $locale, array $messages): self
+    {
+        $catalogue = new ReflectionClass(self::class)->newInstanceWithoutConstructor();
+        // @mago-expect analysis:invalid-property-write
+        $catalogue->locale = $locale;
+        // @mago-expect analysis:invalid-property-write
+        $catalogue->messages = $messages;
+
+        return $catalogue;
     }
 
     public function has(string $key): bool

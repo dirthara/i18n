@@ -80,6 +80,11 @@ The cache writes to a local directory, given as `path`. It creates the directory
 first writes an entry. It does not use Flysystem: a cache file is a local runtime artefact that PHP includes directly,
 so OPcache can keep it compiled.
 
+| Option       | Type                                     | Default                          | Meaning                       |
+|--------------|------------------------------------------|----------------------------------|-------------------------------|
+| `path`       | `string`                                 |                                  | The local cache directory.    |
+| `validation` | `Dirthara\I18n\Enum\CacheEntryValidation` | `CacheEntryValidation::Validate` | Whether an entry's keys and messages are checked when it is read. |
+
 Each entry is one file, named after a SHA-256 hash of the cache key and the locale's code, such as
 `9e4f...c1.en-GB.php`. Because the cache key is hashed, no cache key, however it is written, can name a file outside
 the directory. The file returns the catalogue's messages and nothing else, as an `array<string, string>` sorted by key,
@@ -108,11 +113,37 @@ its temporary file and throws a `TranslationCacheException`.
 
 ### Reading an entry
 
-A missing file is a miss. An existing file is included and checked even though the cache wrote it: it has to return an
-array whose keys follow the [key rules](loading-translations.md#keys) and whose values are all strings. A file that
-does not, that does not parse, or that cannot be read throws a `TranslationCacheException`. The cached loader does not
+A missing file is a miss. By default, an existing file is included and checked once, by the catalogue it becomes, even
+though the cache wrote it: its keys have to follow the [key rules](loading-translations.md#keys) and its values have to be strings.
+A file that breaks those rules throws the catalogue's `InvalidTranslationCatalogueException`, with the file's `path`
+and `cacheKey` added to its context. A file that does not return an array, does not parse, or cannot be read throws a
+`TranslationCacheException`. The cached loader does not
 fall back to its source when that happens, because a corrupt cache is an operational fault that should be seen, not
 repaired silently on every request.
+
+### Trusting entries
+
+Checking an entry is the only work left in a cache hit once OPcache serves the file: it visits every key and message on
+every request. `CacheEntryValidation::Trust` skips it and uses the array the file returns as it is, which makes a hit
+close to free; for 5,000 translations, it takes a request from about 0.3 ms to a few microseconds.
+
+```php
+use Dirthara\I18n\Enum\CacheEntryValidation;
+
+$cache = new PhpTranslationCache(
+    path: '/application/cache/translations',
+    validation: CacheEntryValidation::Trust,
+);
+```
+
+A trusted entry that does not return an array, does not parse, or cannot be read still throws a
+`TranslationCacheException`. Its keys and messages are not checked, though.
+
+:::caution
+With `Trust`, an entry that was edited by hand or damaged, and holds an invalid key or a message that is not a string,
+is used as it is instead of failing. Trust the cache only when nothing but the cache writes to its directory, and
+forget or rebuild the entries when in doubt. Every entry the cache writes itself comes from a checked catalogue.
+:::
 
 ## Invalidation
 
@@ -136,6 +167,12 @@ $cache->forgetAll('validation-translations-v1');
 the entries of every other cache key, and the temporary files of writes still in progress, alone. Forgetting an entry
 or a cache key that has nothing cached does nothing. The next load for a forgotten locale reads the source again and
 stores the result.
+
+:::note
+OPcache does not compile a file modified less than `opcache.file_update_protection` seconds (2 by default) before the
+request started, so an entry is only served from OPcache from the requests after that. Until then, and in the request
+that wrote it, including an entry reads and parses the file. Measure the cache's speed after it has warmed up.
+:::
 
 :::caution
 With `opcache.validate_timestamps` turned off, OPcache keeps serving the compiled version of a cache file that has

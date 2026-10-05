@@ -190,6 +190,20 @@ final class TranslationLoaderException extends RuntimeException implements I18nE
         );
     }
 
+    public static function conflictingKey(Locale $locale, string $key, int|string $first, int|string $second): self
+    {
+        return new self(
+            message: sprintf(
+                'The translation key "%s" for locale "%s" is defined by both loader %s and loader %s.',
+                self::printable($key),
+                $locale->code,
+                self::printable((string) $first),
+                self::printable((string) $second),
+            ),
+            context: ['locale' => $locale->code, 'key' => $key, 'loaders' => [$first, $second]],
+        );
+    }
+
     public static function localeMismatch(Locale $requested, Locale $loaded): self
     {
         return new self(

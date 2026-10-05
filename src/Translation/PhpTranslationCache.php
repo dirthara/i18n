@@ -9,7 +9,9 @@ use Throwable;
 use ErrorException;
 use Dirthara\I18n\Locale;
 use Dirthara\I18n\Contract\TranslationCache;
+use Dirthara\I18n\Enum\CacheEntryValidation;
 use Dirthara\I18n\Exception\TranslationCacheException;
+use Dirthara\I18n\Exception\InvalidTranslationCatalogueException;
 
 use function hash;
 use function ksort;
@@ -22,7 +24,6 @@ use function bin2hex;
 use function is_file;
 use function scandir;
 use function is_array;
-use function is_string;
 use function preg_match;
 use function var_export;
 use function random_bytes;
@@ -34,16 +35,13 @@ use const SORT_STRING;
 
 final readonly class PhpTranslationCache implements TranslationCache
 {
-    private TranslationKeyRule $keys;
-
     /**
      * @throws TranslationCacheException
      */
     public function __construct(
         private string $path,
+        private CacheEntryValidation $validation = CacheEntryValidation::Validate,
     ) {
-        $this->keys = new TranslationKeyRule();
-
         if ($path === '') {
             throw TranslationCacheException::unusableDirectory($path);
         }
@@ -51,6 +49,7 @@ final readonly class PhpTranslationCache implements TranslationCache
 
     /**
      * @throws TranslationCacheException
+     * @throws InvalidTranslationCatalogueException
      */
     public function get(string $cacheKey, Locale $locale): ?TranslationCatalogue
     {
@@ -73,7 +72,20 @@ final readonly class PhpTranslationCache implements TranslationCache
             throw TranslationCacheException::loadFailed($file, $cacheKey, $locale, previous: $error);
         }
 
-        return new TranslationCatalogue($locale, $this->checked($messages, $file, $cacheKey, $locale));
+        if (!is_array($messages)) {
+            throw TranslationCacheException::malformedEntry($file, $cacheKey, $locale);
+        }
+
+        if ($this->validation === CacheEntryValidation::Trust) {
+            /** @var array<string, string> $messages */
+            return TranslationCatalogue::trusted($locale, $messages);
+        }
+
+        try {
+            return new TranslationCatalogue($locale, $messages);
+        } catch (InvalidTranslationCatalogueException $exception) {
+            throw $exception->addContext(['path' => $file, 'cacheKey' => $cacheKey]);
+        }
     }
 
     /**
@@ -152,35 +164,6 @@ final readonly class PhpTranslationCache implements TranslationCache
                 throw TranslationCacheException::removeAllFailed($file, $cacheKey, previous: $error);
             }
         }
-    }
-
-    /**
-     * @return array<string, string>
-     *
-     * @throws TranslationCacheException
-     */
-    private function checked(mixed $messages, string $file, string $cacheKey, Locale $locale): array
-    {
-        if (!is_array($messages)) {
-            throw TranslationCacheException::malformedEntry($file, $cacheKey, $locale);
-        }
-
-        $checked = [];
-
-        // @mago-expect analysis:mixed-assignment
-        foreach ($messages as $key => $message) {
-            if (!is_string($key) || !$this->keys->allows($key)) {
-                throw TranslationCacheException::invalidKey($file, $cacheKey, $locale, (string) $key);
-            }
-
-            if (!is_string($message)) {
-                throw TranslationCacheException::malformedEntry($file, $cacheKey, $locale);
-            }
-
-            $checked[$key] = $message;
-        }
-
-        return $checked;
     }
 
     private function file(string $cacheKey, Locale $locale): string

@@ -10,11 +10,13 @@ use Dirthara\I18n\Locale;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use Dirthara\I18n\Exception\I18nException;
+use Dirthara\I18n\Enum\CacheEntryValidation;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Dirthara\I18n\Translation\PhpTranslationCache;
 use Dirthara\I18n\Translation\TranslationCatalogue;
 use Dirthara\I18n\Tests\Fixtures\TemporaryDirectory;
 use Dirthara\I18n\Exception\TranslationCacheException;
+use Dirthara\I18n\Exception\InvalidTranslationCatalogueException;
 
 use function hash;
 use function chmod;
@@ -306,7 +308,7 @@ final class PhpTranslationCacheTest extends TestCase
 
     #[Test]
     #[DataProvider('malformedEntries')]
-    public function it_rejects_an_entry_that_does_not_return_an_array_of_strings(string $contents): void
+    public function it_rejects_an_entry_that_does_not_return_an_array(string $contents): void
     {
         $file = $this->file('application', 'en-GB');
         file_put_contents($file, $contents);
@@ -314,10 +316,7 @@ final class PhpTranslationCacheTest extends TestCase
         $exception = $this->failure(fn() => $this->cache->get('application', new Locale('en-GB')));
 
         self::assertSame(
-            'The translation cache entry "application" for locale "en-GB" at "'
-            . $file
-            . '" does not return an array of '
-            . 'strings.',
+            'The translation cache entry "application" for locale "en-GB" at "' . $file . '" does not return an array.',
             $exception->getMessage(),
         );
         self::assertSame(['path' => $file, 'cacheKey' => 'application', 'locale' => 'en-GB'], $exception->context);
@@ -331,21 +330,36 @@ final class PhpTranslationCacheTest extends TestCase
         $file = $this->file('application', 'en-GB');
         file_put_contents($file, data: $contents);
 
-        $exception = $this->failure(fn() => $this->cache->get('application', new Locale('en-GB')));
+        $exception = $this->invalidEntry('application', new Locale('en-GB'));
 
         self::assertSame(
-            'The translation cache entry "application" for locale "en-GB" at "'
-            . $file
-            . '" holds the translation key "'
+            'The translation key "'
             . $key
-            . '", which is not valid: a key is a string that is not empty and not a decimal integer.',
+            . '" for locale "en-GB" is not valid: a key is a string that is not empty and not a decimal integer.',
             $exception->getMessage(),
         );
         self::assertSame(
-            ['path' => $file, 'cacheKey' => 'application', 'locale' => 'en-GB', 'key' => $key],
+            ['locale' => 'en-GB', 'key' => $key, 'path' => $file, 'cacheKey' => 'application'],
             $exception->context,
         );
         self::assertStringNotContainsString('Secret', $exception->getMessage());
+    }
+
+    #[Test]
+    #[DataProvider('nonStringMessageEntries')]
+    public function it_rejects_an_entry_with_a_message_that_is_not_a_string(string $contents): void
+    {
+        $file = $this->file('application', 'en-GB');
+        file_put_contents($file, data: $contents);
+
+        $exception = $this->invalidEntry('application', new Locale('en-GB'));
+
+        self::assertSame('The translation "welcome" for locale "en-GB" is not a string.', $exception->getMessage());
+        self::assertSame(
+            ['locale' => 'en-GB', 'key' => 'welcome', 'path' => $file, 'cacheKey' => 'application'],
+            $exception->context,
+        );
+        self::assertTrue(is_file($file));
     }
 
     #[Test]
@@ -445,6 +459,49 @@ final class PhpTranslationCacheTest extends TestCase
     }
 
     #[Test]
+    public function it_returns_a_trusted_entry_without_checking_its_messages(): void
+    {
+        $cache = new PhpTranslationCache($this->directory->path, CacheEntryValidation::Trust);
+        $locale = new Locale('en-GB');
+        $cache->put('application', new TranslationCatalogue($locale, [
+            'welcome' => 'Welcome',
+            'auth.failed' => 'Failed.',
+        ]));
+
+        self::assertSame(
+            ['auth.failed' => 'Failed.', 'welcome' => 'Welcome'],
+            $cache->get('application', $locale)?->messages,
+        );
+
+        file_put_contents($this->file('application', 'en-GB'), data: "<?php\n\nreturn ['404' => 'Not checked'];\n");
+
+        self::assertSame([404 => 'Not checked'], $cache->get('application', $locale)?->messages);
+    }
+
+    #[Test]
+    #[DataProvider('malformedEntries')]
+    public function it_rejects_a_trusted_entry_that_does_not_return_an_array(string $contents): void
+    {
+        $cache = new PhpTranslationCache($this->directory->path, CacheEntryValidation::Trust);
+        file_put_contents($this->file('application', 'en-GB'), data: $contents);
+
+        $exception = $this->failure(static fn() => $cache->get('application', new Locale('en-GB')));
+
+        self::assertSame('application', $exception->context['cacheKey']);
+    }
+
+    #[Test]
+    public function it_reports_a_trusted_entry_that_does_not_parse(): void
+    {
+        $cache = new PhpTranslationCache($this->directory->path, CacheEntryValidation::Trust);
+        file_put_contents($this->file('application', 'en-GB'), data: "<?php\n\nreturn [;\n");
+
+        $exception = $this->failure(static fn() => $cache->get('application', new Locale('en-GB')));
+
+        self::assertInstanceOf(ParseError::class, $exception->getPrevious());
+    }
+
+    #[Test]
     public function it_reports_an_entry_that_does_not_parse(): void
     {
         $file = $this->file('application', 'en-GB');
@@ -523,13 +580,20 @@ final class PhpTranslationCacheTest extends TestCase
     /**
      * @return iterable<string, array{string}>
      */
+    public static function nonStringMessageEntries(): iterable
+    {
+        yield 'integer' => ["<?php\n\nreturn ['welcome' => 1];\n"];
+        yield 'null' => ["<?php\n\nreturn ['welcome' => null];\n"];
+        yield 'nested' => ["<?php\n\nreturn ['welcome' => ['nested' => 'Welcome']];\n"];
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function malformedEntries(): iterable
     {
         yield 'string' => ["<?php\n\nreturn 'Welcome';\n"];
         yield 'nothing' => ["<?php\n\n\$messages = [];\n"];
-        yield 'integer translation' => ["<?php\n\nreturn ['welcome' => 1];\n"];
-        yield 'null translation' => ["<?php\n\nreturn ['welcome' => null];\n"];
-        yield 'nested translations' => ["<?php\n\nreturn ['welcome' => ['nested' => 'Welcome']];\n"];
         yield 'object' => ["<?php\n\nreturn new ArrayObject(['welcome' => 'Welcome']);\n"];
     }
 
@@ -541,6 +605,17 @@ final class PhpTranslationCacheTest extends TestCase
     private function file(string $key, string $locale): string
     {
         return $this->directory->path . '/' . $this->fileName($key, $locale);
+    }
+
+    private function invalidEntry(string $cacheKey, Locale $locale): InvalidTranslationCatalogueException
+    {
+        try {
+            $this->cache->get($cacheKey, $locale);
+        } catch (InvalidTranslationCatalogueException $exception) {
+            return $exception;
+        }
+
+        self::fail('Expected an InvalidTranslationCatalogueException.');
     }
 
     private function failure(callable $operation): TranslationCacheException

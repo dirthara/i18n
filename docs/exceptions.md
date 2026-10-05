@@ -1,7 +1,7 @@
 ---
 id: exceptions
 title: Exceptions
-sidebar_position: 5
+sidebar_position: 6
 description: The exceptions Dirthara I18n throws, what each one means, and the context it carries.
 ---
 
@@ -39,10 +39,12 @@ cache keys, and prefixes, with control characters escaped in the message.
 | A database row has a `key` or `translation` that is not a string.  | `table`, `locale`, `column` |
 | A database key is empty or a decimal integer.                      | `table`, `locale`, `key`    |
 | Two database rows for one locale have the same key.                | `table`, `locale`, `key`    |
-| A cached loader's source returns a catalogue for another locale.   | `locale`, `loadedLocale`    |
+| A loader returns a catalogue for another locale than requested.    | `locale`, `loadedLocale`, and `loader` when combined |
+| Two combined loaders produce the same key.                         | `locale`, `key`, `loaders`  |
 
-A catalogue built by hand with an empty or decimal integer key, or a message that is not a string, throws an
-`InvalidTranslationCatalogueException` with `locale` and `key` in its context.
+A catalogue with an empty or decimal integer key, or a message that is not a string, throws an
+`InvalidTranslationCatalogueException` with `locale` and `key` in its context. When the catalogue comes from a cache
+entry, the entry's `path` and `cacheKey` are added to that context.
 
 ## Cache failures
 
@@ -52,8 +54,7 @@ A catalogue built by hand with an empty or decimal integer key, or a message tha
 | An entry cannot be written to its temporary file.                  | `path`, `cacheKey`, `locale`           |
 | An entry cannot be moved into place.                               | `path`, `cacheKey`, `locale`           |
 | An entry cannot be read or does not parse.                         | `path`, `cacheKey`, `locale`           |
-| An entry does not return an array of strings.                      | `path`, `cacheKey`, `locale`           |
-| An entry holds a key that is empty or a decimal integer.           | `path`, `cacheKey`, `locale`, `key`    |
+| An entry does not return an array.                                 | `path`, `cacheKey`, `locale`           |
 | An entry cannot be removed.                                        | `path`, `cacheKey`, `locale`           |
 | The entries of a cache key cannot all be listed or removed.        | `path`, `cacheKey`                     |
 

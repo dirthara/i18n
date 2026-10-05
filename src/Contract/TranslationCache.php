@@ -7,11 +7,13 @@ namespace Dirthara\I18n\Contract;
 use Dirthara\I18n\Locale;
 use Dirthara\I18n\Translation\TranslationCatalogue;
 use Dirthara\I18n\Exception\TranslationCacheException;
+use Dirthara\I18n\Exception\InvalidTranslationCatalogueException;
 
 interface TranslationCache
 {
     /**
      * @throws TranslationCacheException
+     * @throws InvalidTranslationCatalogueException
      */
     public function get(string $cacheKey, Locale $locale): ?TranslationCatalogue;
 

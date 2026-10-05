@@ -90,27 +90,12 @@ final class TranslationCacheException extends RuntimeException implements I18nEx
     {
         return new self(
             message: sprintf(
-                'The translation cache entry "%s" for locale "%s" at "%s" does not return an array of strings.',
+                'The translation cache entry "%s" for locale "%s" at "%s" does not return an array.',
                 self::printable($cacheKey),
                 $locale->code,
                 self::printable($path),
             ),
             context: ['path' => $path, 'cacheKey' => $cacheKey, 'locale' => $locale->code],
-        );
-    }
-
-    public static function invalidKey(string $path, string $cacheKey, Locale $locale, string $key): self
-    {
-        return new self(
-            message: sprintf(
-                'The translation cache entry "%s" for locale "%s" at "%s" holds the translation key "%s", which is not '
-                . 'valid: a key is a string that is not empty and not a decimal integer.',
-                self::printable($cacheKey),
-                $locale->code,
-                self::printable($path),
-                self::printable($key),
-            ),
-            context: ['path' => $path, 'cacheKey' => $cacheKey, 'locale' => $locale->code, 'key' => $key],
         );
     }
 
