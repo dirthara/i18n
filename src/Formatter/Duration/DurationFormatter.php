@@ -131,7 +131,7 @@ final class DurationFormatter implements DurationFormatterContract
             try {
                 $formatter = new MessageFormatter(
                     $this->locale->code,
-                    '{0, number, :: unit/' . $unit . ' ' . $width . '}',
+                    '{0, number, :: measure-unit/duration-' . $unit . ' ' . $width . '}',
                 );
             } catch (IntlException $exception) {
                 throw FormatterException::creationFailed(self::FORMATTER, $this->locale, $style, previous: $exception);

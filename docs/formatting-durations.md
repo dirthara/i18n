@@ -34,7 +34,8 @@ The units are joined as the locale joins the parts of a quantity, and every unit
 needs, which ICU takes from CLDR: in Arabic, two minutes is `دقيقتان`, the dual of minute.
 
 The `Digital` style counts hours past a day, as in `25:01:01`, leaves the hours out of a duration under an hour, as in
-`2:05`, and rounds to whole seconds, a half up. Its separator comes from the locale: Danish and Finnish write `1.02.05`.
+`2:05`, and rounds to whole seconds, a half up. Its separator comes from the locale's CLDR data, read through `ResourceBundle` (see
+[ICU data](installation.md#icu-data)): Danish and Finnish write `1.02.05`.
 
 A duration cannot be negative: a negative number of seconds, like `NAN`, `INF`, and `-INF`, throws an
 `InvalidNumberException`.

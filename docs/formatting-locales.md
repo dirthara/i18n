@@ -33,7 +33,8 @@ $formatter->variants($locale);   // []
 
 The names come from CLDR, through ICU and the `intl` extension. A script is named differently inside a locale's name
 than on its own, as CLDR names it: `Traditional` in `Chinese (Traditional, Taiwan)`, but `Traditional Han` from
-`script()`. Every variant is named, and they are joined with the separator of the formatter's locale:
+`script()`. Every variant is named, and they are joined with the separator of the formatter's locale, read from
+ICU's data (see [ICU data](installation.md#icu-data)):
 
 ```php
 $formatter->format(new Locale('de-CH-1901-1996'));

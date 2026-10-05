@@ -80,7 +80,7 @@ does not know at all, such as `zz`, throws a `FormatterException`, as the other 
 
 :::note
 PHP's `intl` extension has no relative date-time formatter, so this one reads CLDR's relative time data through
-`ResourceBundle`.
+`ResourceBundle`. See [ICU data](installation.md#icu-data) for what that means across ICU versions.
 :::
 
 ## Formatter factory
