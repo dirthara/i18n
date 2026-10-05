@@ -8,7 +8,16 @@ description: Requirements and installation status for Dirthara I18n.
 ## Requirements
 
 PHP 8.5 or later within the PHP 8 series is required, with the `intl` extension.
-The package has no runtime Composer dependencies beyond PHP.
+
+The package depends on:
+
+| Package                                                     | Used for                                       |
+|-------------------------------------------------------------|------------------------------------------------|
+| [`league/flysystem`](https://flysystem.thephpleague.com/) `^3.0` | Reading PHP and JSON translation files.    |
+| [`dirthara/database`](https://github.com/dirthara/database) `^0.2` | Reading translations from a database table. |
+
+The database loader needs the PDO driver of the database it reads: `pdo_mysql`, `pdo_pgsql`, `pdo_sqlite`, or
+`pdo_sqlsrv`.
 
 ## Package installation
 

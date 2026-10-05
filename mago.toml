@@ -119,11 +119,16 @@ enabled = false
 [linter.rules.too-many-properties]
 enabled = false
 
-# The package depends on nothing beyond PHP; add a dependency here when the package requires one. Tests may use
-# anything.
+# The package depends on PHP, dirthara/database, and league/flysystem; add a dependency here when the package requires
+# one. Tests may use anything.
 [[guard.perimeter.rules]]
 namespace = "Dirthara\\I18n\\"
-permit = ["@native", "Dirthara\\I18n\\**"]
+permit = [
+    "@native",
+    "Dirthara\\I18n\\**",
+    "Dirthara\\Database\\**",
+    "League\\Flysystem\\**",
+]
 
 [[guard.perimeter.rules]]
 namespace = "Dirthara\\I18n\\Tests\\"
