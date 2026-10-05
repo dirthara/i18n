@@ -13,7 +13,7 @@ interface ListFormatter
     public Locale $locale { get; }
 
     /**
-     * @param list<string> $items
+     * @param array<array-key, string> $items
      */
     public function format(array $items, ListType $type = ListType::And, ListWidth $width = ListWidth::Wide): string;
 }

@@ -22,7 +22,7 @@ $formatter->format(['appels', 'peren'], ListType::Or);              // 'appels o
 
 | Argument | Type                           | Default           | Meaning                                    |
 |----------|--------------------------------|-------------------|--------------------------------------------|
-| `items`  | `list<string>`                 |                   | The strings to join, in their order.       |
+| `items`  | `array<array-key, string>`     |                   | The strings to join, in the order of the array; the keys are ignored. |
 | `type`   | `Dirthara\I18n\Enum\ListType`  | `ListType::And`   | `And` lists all items, `Or` offers a choice, and `Units` lists the parts of one quantity, such as `3 hours, 20 minutes`. |
 | `width`  | `Dirthara\I18n\Enum\ListWidth` | `ListWidth::Wide` | How much space the locale's separators take: `Wide`, `Short`, or `Narrow`. |
 
@@ -35,8 +35,9 @@ $formatter->format(['appels', 'peren'], ListType::Or);              // 'appels o
 | `Units`, `Wide`   | `a, b, c`    | `a, b en c` | `a, b und c`  |
 | `Units`, `Narrow` | `a b c`      | `a, b, c`   | `a, b und c`  |
 
-An empty list is the empty string, and a list of one item is that item. The items are joined in the order they are in;
-their keys are not used. Every item has to be a string: anything else throws an `InvalidListItemException` rather than
+An empty list is the empty string, and a list of one item is that item. The items are joined in the order the array
+holds them, whatever their keys: `[2 => 'b', 0 => 'a', 'x' => 'c']` is `b, a and c`, so an array does not have to be a
+list. Every item has to be a string: anything else throws an `InvalidListItemException` rather than
 being converted, and a string that is not valid UTF-8 throws a `FormatterException`.
 
 ## Formatter factory
