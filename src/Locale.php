@@ -7,22 +7,24 @@ namespace Dirthara\I18n;
 use Locale as IntlLocale;
 use Dirthara\I18n\Exception\InvalidLocaleException;
 
+use function count;
+use function substr;
+use function explode;
 use function implode;
+use function ucfirst;
 use function preg_match;
 use function strtolower;
-use function str_contains;
+use function strtoupper;
+use function str_replace;
+use function array_unique;
 
 final readonly class Locale
 {
-    private const string PATTERN = '/^[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*$/';
-
-    private const string LANGUAGE = '/^[a-z]{2,3}$/';
-
-    private const string SCRIPT = '/^[A-Z][a-z]{3}$/';
-
-    private const string REGION = '/^(?:[A-Z]{2}|[0-9]{3})$/';
-
-    private const string VARIANT = '/^(?:[0-9A-Za-z]{5,8}|[0-9][0-9A-Za-z]{3})$/';
+    private const string PATTERN =
+        '/^(?<language>[a-z]{2,3}|[a-z]{5,8})'
+            . '(?:[-_](?<script>[a-z]{4}))?'
+            . '(?:[-_](?<region>[a-z]{2}|[0-9]{3}))?'
+            . '(?<variants>(?:[-_](?:[0-9a-z]{5,8}|[0-9][0-9a-z]{3}))*)\z/i';
 
     public string $code;
 
@@ -42,74 +44,23 @@ final readonly class Locale
      */
     public function __construct(string $code)
     {
-        if ($code === '' || preg_match(self::PATTERN, $code) !== 1) {
+        $matches = [];
+
+        if (preg_match(self::PATTERN, $code, $matches) !== 1) {
             throw InvalidLocaleException::forLocale($code);
         }
 
-        $canonical = IntlLocale::canonicalize($code);
+        $variants = $this->splitVariants($matches['variants']);
 
-        // ICU canonicalises "root" and "und" to the empty root locale, which it then reads as its own default locale,
-        // and turns extensions and private use into keywords after an "@", which a Locale does not hold.
-        if ($canonical === null || $canonical === '' || str_contains($canonical, '@')) {
+        if (count(array_unique($variants)) !== count($variants)) {
             throw InvalidLocaleException::forLocale($code);
         }
 
-        $language = IntlLocale::getPrimaryLanguage($canonical);
-        $script = $this->subtag(IntlLocale::getScript($canonical));
-        $region = $this->subtag(IntlLocale::getRegion($canonical));
-
-        // ICU reads any alphanumeric subtag in any position, so each one is held to the BCP 47 syntax, and a language,
-        // script, or region ICU has no name for is not a locale.
-        if (
-            $language === null
-            || preg_match(self::LANGUAGE, $language) !== 1
-            || !$this->isNamed(IntlLocale::getDisplayLanguage($language, displayLocale: 'en'), $language)
-        ) {
-            throw InvalidLocaleException::forLocale($code);
-        }
-
-        $subtags = [$language];
-
-        if ($script !== null) {
-            if (
-                preg_match(self::SCRIPT, $script) !== 1
-                || !$this->isNamed(IntlLocale::getDisplayScript('und_' . $script, displayLocale: 'en'), $script)
-            ) {
-                throw InvalidLocaleException::forLocale($code);
-            }
-
-            $subtags[] = $script;
-        }
-
-        if ($region !== null) {
-            if (
-                preg_match(self::REGION, $region) !== 1
-                || !$this->isNamed(IntlLocale::getDisplayRegion('und_' . $region, displayLocale: 'en'), $region)
-            ) {
-                throw InvalidLocaleException::forLocale($code);
-            }
-
-            $subtags[] = $region;
-        }
-
-        /** @var list<string> $found */
-        $found = IntlLocale::getAllVariants($canonical) ?? [];
-        $variants = [];
-
-        foreach ($found as $variant) {
-            if (preg_match(self::VARIANT, $variant) !== 1) {
-                throw InvalidLocaleException::forLocale($code);
-            }
-
-            $variants[] = strtolower($variant);
-            $subtags[] = strtolower($variant);
-        }
-
-        $this->code = implode(separator: '-', array: $subtags);
-        $this->language = $language;
-        $this->script = $script;
-        $this->region = $region;
+        $this->language = strtolower($matches['language']);
+        $this->script = $matches['script'] === '' ? null : ucfirst(strtolower($matches['script']));
+        $this->region = $matches['region'] === '' ? null : strtoupper($matches['region']);
         $this->variants = $variants;
+        $this->code = $this->compose();
     }
 
     public function isRightToLeft(): bool
@@ -122,16 +73,32 @@ final readonly class Locale
         return $this->code === $other->code;
     }
 
-    private function subtag(?string $value): ?string
+    /**
+     * @return list<string>
+     */
+    private function splitVariants(string $variants): array
     {
-        return $value === null || $value === '' ? null : $value;
+        if ($variants === '') {
+            return [];
+        }
+
+        $separated = str_replace(search: '_', replace: '-', subject: strtolower($variants));
+
+        return explode(separator: '-', string: substr($separated, offset: 1));
     }
 
-    /**
-     * ICU falls back to the code itself for a subtag it has no name for, and returns false when the lookup fails.
-     */
-    private function isNamed(string|false $name, string $subtag): bool
+    private function compose(): string
     {
-        return $name !== false && $name !== $subtag;
+        $subtags = [$this->language];
+
+        if ($this->script !== null) {
+            $subtags[] = $this->script;
+        }
+
+        if ($this->region !== null) {
+            $subtags[] = $this->region;
+        }
+
+        return implode(separator: '-', array: [...$subtags, ...$this->variants]);
     }
 }

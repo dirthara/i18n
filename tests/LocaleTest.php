@@ -140,10 +140,19 @@ final class LocaleTest extends TestCase
         yield 'script with underscores' => ['sr_Latn_RS', 'sr-Latn-RS', 'sr', 'Latn', 'RS', []];
         yield 'numeric region' => ['es-419', 'es-419', 'es', null, '419', []];
         yield 'variant' => ['de-DE-1996', 'de-DE-1996', 'de', null, 'DE', ['1996']];
-        yield 'grandfathered tag' => ['i-klingon', 'tlh', 'tlh', null, null, []];
-        yield 'deprecated tag' => ['zh-min-nan', 'nan', 'nan', null, null, []];
+        yield 'two variants' => ['de-CH-1901-1996', 'de-CH-1901-1996', 'de', null, 'CH', ['1901', '1996']];
+        yield 'five letter language' => ['POSIX', 'posix', 'posix', null, null, []];
+        yield 'eight letter language' => ['abcdefgh-Latn-US', 'abcdefgh-Latn-US', 'abcdefgh', 'Latn', 'US', []];
+        yield 'undetermined language' => ['und', 'und', 'und', null, null, []];
+        yield 'lowercase script' => ['az-cyrl-az', 'az-Cyrl-AZ', 'az', 'Cyrl', 'AZ', []];
+        yield 'five letter variant' => ['en-latin', 'en-latin', 'en', null, null, ['latin']];
+        yield 'variant that starts like a script' => ['en-Latn1', 'en-latn1', 'en', null, null, ['latn1']];
         yield 'variants without region' => ['sl-rozaj-biske', 'sl-rozaj-biske', 'sl', null, null, ['rozaj', 'biske']];
         yield 'uppercase variant' => ['de_CH_1901', 'de-CH-1901', 'de', null, 'CH', ['1901']];
+        yield 'unassigned language' => ['zz', 'zz', 'zz', null, null, []];
+        yield 'unassigned script' => ['en-Abcd', 'en-Abcd', 'en', 'Abcd', null, []];
+        yield 'unassigned region' => ['en-AA', 'en-AA', 'en', null, 'AA', []];
+        yield 'unassigned numeric region' => ['en-999', 'en-999', 'en', null, '999', []];
         yield 'all subtags' => ['SR-latn-rs-EKAVSK', 'sr-Latn-RS-ekavsk', 'sr', 'Latn', 'RS', ['ekavsk']];
     }
 
@@ -177,15 +186,14 @@ final class LocaleTest extends TestCase
         yield 'private use' => ['en-US-x-foo'];
         yield 'extension' => ['en-US-u-ca-gregory'];
         yield 'root' => ['root'];
-        yield 'undetermined' => ['und'];
+        yield 'grandfathered tag' => ['i-klingon'];
+        yield 'deprecated tag' => ['zh-min-nan'];
+        yield 'trailing newline' => ["en\n"];
         yield 'numeric language' => ['123'];
         yield 'one letter language' => ['a'];
         yield 'POSIX C locale' => ['C'];
-        yield 'POSIX locale' => ['POSIX'];
-        yield 'unknown language' => ['zz'];
-        yield 'unknown script' => ['en-Abcd'];
-        yield 'unknown region' => ['en-AA'];
-        yield 'unknown numeric region' => ['en-999'];
+        yield 'duplicate variant' => ['de-1996-1996'];
+        yield 'duplicate variant in another case' => ['sl-rozaj-ROZAJ'];
         yield 'extended language' => ['zh-yue-HK'];
         yield 'short variant' => ['en-US-foo'];
     }
