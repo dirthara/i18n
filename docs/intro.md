@@ -11,7 +11,7 @@ translating translations, and formatting values for a locale.
 :::note
 The package is in early development. Translations can be loaded, cached, and translated from several loaders for one
 locale; overriding one loader's translations with another's, and locale fallback, are not implemented yet. Of the
-formatters, the currency and number formatters are implemented so far.
+formatters, the currency, number, and percentage formatters are implemented so far.
 :::
 
 ## Concepts
@@ -41,4 +41,5 @@ another belongs to a layer that does not exist yet. No loader falls back from `n
 - [Translating](translating.md): the translator, missing translations, placeholders, and plurals.
 - [Formatting currencies](formatting-currencies.md): the currency formatter, its styles, rounding, and its factory.
 - [Formatting numbers](formatting-numbers.md): plain, compact, scientific, spelled-out, and ordinal numbers.
+- [Formatting percentages](formatting-percentages.md): fractions as percentages.
 - [Exceptions](exceptions.md): what each exception means and the context it carries.
