@@ -1,7 +1,7 @@
 ---
 id: exceptions
 title: Exceptions
-sidebar_position: 6
+sidebar_position: 7
 description: The exceptions Dirthara I18n throws, what each one means, and the context it carries.
 ---
 
@@ -23,6 +23,8 @@ cache keys, and prefixes, with control characters escaped in the message.
 | `TranslationCacheException`            | `RuntimeException`         | A cache entry cannot be written, read, or removed, or is malformed. |
 | `InvalidPluralCountException`          | `InvalidArgumentException` | A plural count is `NAN`, `INF`, or `-INF`. Its context holds `locale` and `count`. |
 | `PluralRulesException`                 | `RuntimeException`         | Intl cannot create the plural rules for a locale, fails to give a plural category, or gives one the package does not know. |
+| `InvalidCurrencyAmountException`       | `InvalidArgumentException` | An amount to format is `NAN`, `INF`, or `-INF`. Its context holds `locale`, `currency`, and `amount`. |
+| `CurrencyFormatterException`           | `RuntimeException`         | Intl cannot create a currency formatter for a locale and style, or fails to format an amount. |
 
 ## Loader failures
 
@@ -66,3 +68,12 @@ entry, the entry's `path` and `cacheKey` are added to that context.
 | Intl cannot create the plural rules, such as for a locale code longer than the 156 characters `intl` accepts. | `locale`; the `IntlException` is the previous exception |
 | ICU fails to format a count into a plural category.                | `locale`, `count`, `intlCode`, `intlMessage`    |
 | ICU gives a category that is not a known `PluralCategory`.         | `locale`, `count`, `category`                   |
+
+## Currency formatter failures
+
+| Failure                                                            | Context                                                    |
+|--------------------------------------------------------------------|------------------------------------------------------------|
+| Intl cannot create the formatter, such as for a locale code longer than the 156 characters `intl` accepts. | `locale`, `style`; the `IntlException` is the previous exception |
+| Intl fails to format an amount.                                    | `locale`, `currency`, `style`, `intlCode`, `intlMessage`   |
+
+The amount itself is not part of an exception's message or context, unless it is not a finite number.
