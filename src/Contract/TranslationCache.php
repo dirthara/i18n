@@ -13,15 +13,20 @@ interface TranslationCache
     /**
      * @throws TranslationCacheException
      */
-    public function get(string $key, Locale $locale): ?TranslationCatalogue;
+    public function get(string $cacheKey, Locale $locale): ?TranslationCatalogue;
 
     /**
      * @throws TranslationCacheException
      */
-    public function put(string $key, TranslationCatalogue $catalogue): void;
+    public function put(string $cacheKey, TranslationCatalogue $catalogue): void;
 
     /**
      * @throws TranslationCacheException
      */
-    public function forget(string $key, Locale $locale): void;
+    public function forget(string $cacheKey, Locale $locale): void;
+
+    /**
+     * @throws TranslationCacheException
+     */
+    public function forgetAll(string $cacheKey): void;
 }

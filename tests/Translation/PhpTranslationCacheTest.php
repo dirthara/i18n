@@ -56,7 +56,7 @@ final class PhpTranslationCacheTest extends TestCase
         $this->cache->put('application', new TranslationCatalogue($locale, [
             'validation.required' => 'The {attribute} field is required.',
             'quotes' => "It's \"quoted\" \\ and\nmultiline ?> <?php",
-            '404' => 'Not found',
+            'errors.404' => 'Not found',
         ]));
 
         $catalogue = $this->cache->get('application', new Locale('en_gb'));
@@ -65,7 +65,7 @@ final class PhpTranslationCacheTest extends TestCase
         self::assertSame('en-GB', $catalogue->locale->code);
         self::assertSame('The {attribute} field is required.', $catalogue->get('validation.required'));
         self::assertSame("It's \"quoted\" \\ and\nmultiline ?> <?php", $catalogue->get('quotes'));
-        self::assertSame('Not found', $catalogue->get('404'));
+        self::assertSame('Not found', $catalogue->get('errors.404'));
         self::assertCount(3, $catalogue->messages);
     }
 
@@ -101,13 +101,13 @@ final class PhpTranslationCacheTest extends TestCase
         $this->cache->put('first', new TranslationCatalogue($locale, [
             'b' => 'B',
             'a' => 'A',
-            '10' => 'Ten',
-            '9' => 'Nine',
+            'n.10' => 'Ten',
+            'n.9' => 'Nine',
         ]));
         $this->cache->put('second', new TranslationCatalogue($locale, [
-            '9' => 'Nine',
+            'n.9' => 'Nine',
             'a' => 'A',
-            '10' => 'Ten',
+            'n.10' => 'Ten',
             'b' => 'B',
         ]));
 
@@ -261,7 +261,7 @@ final class PhpTranslationCacheTest extends TestCase
             'Unable to write the translation cache entry "application\\n" for locale "en-GB" to "' . $file . '".',
             $exception->getMessage(),
         );
-        self::assertSame(['path' => $file, 'key' => "application\n", 'locale' => 'en-GB'], $exception->context);
+        self::assertSame(['path' => $file, 'cacheKey' => "application\n", 'locale' => 'en-GB'], $exception->context);
         self::assertInstanceOf(ErrorException::class, $exception->getPrevious());
         self::assertSame([], $this->directory->files());
     }
@@ -284,7 +284,7 @@ final class PhpTranslationCacheTest extends TestCase
             . '".',
             $exception->getMessage(),
         );
-        self::assertSame(['path' => $file, 'key' => 'application', 'locale' => 'en-GB'], $exception->context);
+        self::assertSame(['path' => $file, 'cacheKey' => 'application', 'locale' => 'en-GB'], $exception->context);
         self::assertInstanceOf(ErrorException::class, $exception->getPrevious());
         self::assertSame([$this->fileName('application', 'en-GB')], $this->directory->files());
         self::assertSame(['occupied'], $this->directory->files($file));
@@ -320,7 +320,127 @@ final class PhpTranslationCacheTest extends TestCase
             . 'strings.',
             $exception->getMessage(),
         );
-        self::assertSame(['path' => $file, 'key' => 'application', 'locale' => 'en-GB'], $exception->context);
+        self::assertSame(['path' => $file, 'cacheKey' => 'application', 'locale' => 'en-GB'], $exception->context);
+        self::assertTrue(is_file($file));
+    }
+
+    #[Test]
+    #[DataProvider('invalidKeyEntries')]
+    public function it_rejects_an_entry_with_an_empty_or_integer_key(string $contents, string $key): void
+    {
+        $file = $this->file('application', 'en-GB');
+        file_put_contents($file, data: $contents);
+
+        $exception = $this->failure(fn() => $this->cache->get('application', new Locale('en-GB')));
+
+        self::assertSame(
+            'The translation cache entry "application" for locale "en-GB" at "'
+            . $file
+            . '" holds the translation key "'
+            . $key
+            . '", which is not valid: a key is a string that is not empty and not a decimal integer.',
+            $exception->getMessage(),
+        );
+        self::assertSame(
+            ['path' => $file, 'cacheKey' => 'application', 'locale' => 'en-GB', 'key' => $key],
+            $exception->context,
+        );
+        self::assertStringNotContainsString('Secret', $exception->getMessage());
+    }
+
+    #[Test]
+    public function it_forgets_every_locale_of_one_cache_key(): void
+    {
+        foreach (['en-GB', 'nl-NL', 'zh-Hant-TW'] as $code) {
+            $this->cache->put('application', new TranslationCatalogue(new Locale($code), ['welcome' => $code]));
+            $this->cache->put('validation', new TranslationCatalogue(new Locale($code), ['welcome' => $code]));
+        }
+
+        file_put_contents($this->directory->path . '/unrelated.php', data: '<?php return [];');
+
+        $this->cache->forgetAll('application');
+
+        foreach (['en-GB', 'nl-NL', 'zh-Hant-TW'] as $code) {
+            self::assertNull($this->cache->get('application', new Locale($code)));
+            self::assertSame($code, $this->cache->get('validation', new Locale($code))?->get('welcome'));
+        }
+
+        self::assertCount(4, $this->directory->files());
+    }
+
+    #[Test]
+    public function it_leaves_a_write_in_progress_when_it_forgets_every_locale(): void
+    {
+        $this->cache->put('application', new TranslationCatalogue(new Locale('en-GB'), []));
+        $temporary = $this->file('application', 'en-GB') . '.0123456789abcdef.tmp';
+        file_put_contents($temporary, data: '<?php return [];');
+
+        $this->cache->forgetAll('application');
+
+        self::assertSame(
+            [$this->fileName('application', 'en-GB') . '.0123456789abcdef.tmp'],
+            $this->directory->files(),
+        );
+    }
+
+    #[Test]
+    public function it_forgets_every_locale_of_a_cache_key_it_does_not_have(): void
+    {
+        $this->cache->put('validation', new TranslationCatalogue(new Locale('en-GB'), []));
+
+        $this->cache->forgetAll('application');
+        new PhpTranslationCache($this->directory->path . '/missing')->forgetAll('application');
+
+        self::assertSame([$this->fileName('validation', 'en-GB')], $this->directory->files());
+    }
+
+    #[Test]
+    #[DataProvider('unsafeKeys')]
+    public function it_forgets_every_locale_of_an_unsafe_cache_key_inside_its_directory(string $cacheKey): void
+    {
+        $nested = $this->directory->path . '/cache';
+        mkdir($nested);
+        file_put_contents($this->directory->path . '/outside.en-GB.php', data: '<?php return [];');
+        $cache = new PhpTranslationCache($nested);
+        $cache->put($cacheKey, new TranslationCatalogue(new Locale('en-GB'), []));
+        $cache->put('other', new TranslationCatalogue(new Locale('en-GB'), []));
+
+        $cache->forgetAll($cacheKey);
+
+        self::assertEqualsCanonicalizing(['cache', 'outside.en-GB.php'], $this->directory->files());
+        self::assertSame([$this->fileName('other', 'en-GB')], $this->directory->files($nested));
+    }
+
+    #[Test]
+    public function it_reports_a_directory_it_cannot_list_when_it_forgets_every_locale(): void
+    {
+        chmod($this->directory->path, permissions: 0o333);
+
+        $exception = $this->failure(fn() => $this->cache->forgetAll("application\n"));
+
+        chmod($this->directory->path, permissions: 0o755);
+
+        self::assertSame(
+            'Unable to remove every translation cache entry "application\\n" from "' . $this->directory->path . '".',
+            $exception->getMessage(),
+        );
+        self::assertSame(['path' => $this->directory->path, 'cacheKey' => "application\n"], $exception->context);
+        self::assertInstanceOf(ErrorException::class, $exception->getPrevious());
+    }
+
+    #[Test]
+    public function it_reports_an_entry_it_cannot_remove_when_it_forgets_every_locale(): void
+    {
+        $this->cache->put('application', new TranslationCatalogue(new Locale('en-GB'), []));
+        chmod($this->directory->path, permissions: 0o555);
+
+        $exception = $this->failure(fn() => $this->cache->forgetAll('application'));
+
+        chmod($this->directory->path, permissions: 0o755);
+
+        $file = $this->file('application', 'en-GB');
+        self::assertSame(['path' => $file, 'cacheKey' => 'application'], $exception->context);
+        self::assertInstanceOf(ErrorException::class, $exception->getPrevious());
         self::assertTrue(is_file($file));
     }
 
@@ -336,7 +456,7 @@ final class PhpTranslationCacheTest extends TestCase
             'Unable to load the translation cache entry "application" for locale "en-GB" from "' . $file . '".',
             $exception->getMessage(),
         );
-        self::assertSame(['path' => $file, 'key' => 'application', 'locale' => 'en-GB'], $exception->context);
+        self::assertSame(['path' => $file, 'cacheKey' => 'application', 'locale' => 'en-GB'], $exception->context);
         self::assertInstanceOf(ParseError::class, $exception->getPrevious());
     }
 
@@ -349,7 +469,7 @@ final class PhpTranslationCacheTest extends TestCase
 
         $exception = $this->failure(fn() => $this->cache->get('application', new Locale('en-GB')));
 
-        self::assertSame(['path' => $file, 'key' => 'application', 'locale' => 'en-GB'], $exception->context);
+        self::assertSame(['path' => $file, 'cacheKey' => 'application', 'locale' => 'en-GB'], $exception->context);
         self::assertInstanceOf(ErrorException::class, $exception->getPrevious());
     }
 
@@ -369,7 +489,7 @@ final class PhpTranslationCacheTest extends TestCase
             'Unable to remove the translation cache entry "application" for locale "en-GB" at "' . $file . '".',
             $exception->getMessage(),
         );
-        self::assertSame(['path' => $file, 'key' => 'application', 'locale' => 'en-GB'], $exception->context);
+        self::assertSame(['path' => $file, 'cacheKey' => 'application', 'locale' => 'en-GB'], $exception->context);
         self::assertInstanceOf(ErrorException::class, $exception->getPrevious());
         self::assertTrue(is_file($file));
     }
@@ -386,6 +506,18 @@ final class PhpTranslationCacheTest extends TestCase
         yield 'null byte' => ["application\0.php"];
         yield 'empty' => [''];
         yield 'very long' => [str_repeat('application', times: 100)];
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function invalidKeyEntries(): iterable
+    {
+        yield 'integer' => ["<?php\n\nreturn [404 => 'Secret'];\n", '404'];
+        yield 'integer string' => ["<?php\n\nreturn ['404' => 'Secret'];\n", '404'];
+        yield 'negative integer' => ["<?php\n\nreturn [-1 => 'Secret'];\n", '-1'];
+        yield 'list' => ["<?php\n\nreturn ['Secret'];\n", '0'];
+        yield 'empty' => ["<?php\n\nreturn ['' => 'Secret'];\n", ''];
     }
 
     /**

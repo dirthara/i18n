@@ -2,7 +2,7 @@
 id: caching-translations
 title: Caching translations
 sidebar_position: 4
-description: The compiled PHP translation cache, its file format, and invalidating it.
+description: The compiled PHP translation cache, cache keys, its file format, and invalidating it.
 ---
 
 Loading translations from their source on every request means scanning directories, running PHP files, decoding JSON,
@@ -24,42 +24,55 @@ $cache = new PhpTranslationCache(path: '/application/cache/translations');
 $loader = new CachedTranslationLoader(
     loader: new PhpTranslationLoader($filesystem, 'translations', 'dirthara.validation'),
     cache: $cache,
-    key: 'validation',
+    cacheKey: 'validation-translations-v1',
 );
 
 $catalogue = $loader->load(new Locale('en-GB'));
 ```
 
-| Option   | Type                                    | Meaning                                                    |
-|----------|-----------------------------------------|------------------------------------------------------------|
-| `loader` | `Dirthara\I18n\Contract\TranslationLoader` | The loader to cache.                                    |
-| `cache`  | `Dirthara\I18n\Contract\TranslationCache`  | Where the catalogues are stored.                        |
-| `key`    | `string`                                | Identifies the wrapped loader's source in the cache.      |
+| Option     | Type                                       | Meaning                                              |
+|------------|--------------------------------------------|------------------------------------------------------|
+| `loader`   | `Dirthara\I18n\Contract\TranslationLoader` | The loader to cache.                                 |
+| `cache`    | `Dirthara\I18n\Contract\TranslationCache`  | Where the catalogues are stored.                     |
+| `cacheKey` | `string`                                   | The identity of the wrapped loader's configuration.  |
 
-`load()` looks for an entry for its key and the locale. If there is one, it returns it without calling the wrapped
-loader. If there is none, it calls the wrapped loader, stores the catalogue, and returns it.
-
-The key is what tells two sources apart: an application can have an `application`, a `validation`, and an
-`authorisation` loader for the same locale, and each needs its own key or they overwrite each other's entries. Choose a
-key that stays the same between requests and deployments. It is never derived from the loader object, so two loaders
-with the same key share their entries.
+`load()` looks for an entry for its cache key and the locale. If there is one, it returns it without calling the
+wrapped loader. If there is none, it calls the wrapped loader, stores the catalogue, and returns it.
 
 An empty catalogue is cached as well. A locale a source has no translations for is a hit from then on, instead of a
 directory scan or a query on every request.
 
+## Cache keys
+
+A cache key identifies one configured translation source: one loader with one configuration. It is not a friendly name.
+Two loaders with the same cache key share their entries, and two loaders with different cache keys never do, so an
+`application`, a `validation`, and an `authorisation` loader for the same locale each need their own.
+
+The cache key is never derived from the loader, because the package cannot tell what a custom loader or a Flysystem
+adapter depends on. Choose it yourself, and keep it the same between requests and deployments for as long as the
+source's configuration stays the same.
+
+:::caution
+When anything changes that affects the keys or messages a loader produces, such as its path, prefix, table,
+filesystem, or any setting of a custom loader, its cached entries are stale. Either forget every entry of the old
+cache key with `forgetAll()`, or give the loader a new cache key, such as `validation-translations-v2`. Neither
+happens by itself.
+:::
+
 ## The PHP cache
 
-`Dirthara\I18n\Translation\PhpTranslationCache` implements `Dirthara\I18n\Contract\TranslationCache`, which has three
-methods:
+`Dirthara\I18n\Translation\PhpTranslationCache` implements `Dirthara\I18n\Contract\TranslationCache`:
 
 ```php
 interface TranslationCache
 {
-    public function get(string $key, Locale $locale): ?TranslationCatalogue;
+    public function get(string $cacheKey, Locale $locale): ?TranslationCatalogue;
 
-    public function put(string $key, TranslationCatalogue $catalogue): void;
+    public function put(string $cacheKey, TranslationCatalogue $catalogue): void;
 
-    public function forget(string $key, Locale $locale): void;
+    public function forget(string $cacheKey, Locale $locale): void;
+
+    public function forgetAll(string $cacheKey): void;
 }
 ```
 
@@ -67,10 +80,10 @@ The cache writes to a local directory, given as `path`. It creates the directory
 first writes an entry. It does not use Flysystem: a cache file is a local runtime artefact that PHP includes directly,
 so OPcache can keep it compiled.
 
-Each entry is one file, named after a SHA-256 hash of the key and the locale's code, such as
-`9e4f...c1.en-GB.php`. Because the key is hashed, no key, however it is written, can name a file outside the directory.
-The file returns the catalogue's messages and nothing else, sorted by key so that the same messages always give the
-same file:
+Each entry is one file, named after a SHA-256 hash of the cache key and the locale's code, such as
+`9e4f...c1.en-GB.php`. Because the cache key is hashed, no cache key, however it is written, can name a file outside
+the directory. The file returns the catalogue's messages and nothing else, as an `array<string, string>` sorted by key,
+so that the same messages always give the same file:
 
 ```php
 <?php
@@ -83,8 +96,8 @@ return array (
 );
 ```
 
-There is no locale, prefix, source path, loader, or object in it. The key and the locale are in the file name, and the
-prefix is already part of every key.
+There is no locale, prefix, source path, loader, or object in it. The cache key and the locale are in the file name,
+and the prefix is already part of every key.
 
 ### Writing an entry
 
@@ -96,9 +109,10 @@ its temporary file and throws a `TranslationCacheException`.
 ### Reading an entry
 
 A missing file is a miss. An existing file is included and checked even though the cache wrote it: it has to return an
-array whose values are all strings. A file that does not, that does not parse, or that cannot be read throws a
-`TranslationCacheException`. The cached loader does not fall back to its source when that happens, because a corrupt
-cache is an operational fault that should be seen, not repaired silently on every request.
+array whose keys follow the [key rules](loading-translations.md#keys) and whose values are all strings. A file that
+does not, that does not parse, or that cannot be read throws a `TranslationCacheException`. The cached loader does not
+fall back to its source when that happens, because a corrupt cache is an operational fault that should be seen, not
+repaired silently on every request.
 
 ## Invalidation
 
@@ -106,12 +120,22 @@ The cache never expires anything and never checks a source for changes. There is
 file, a JSON file, or a row in the translations table does not invalidate anything. Database translations have no
 modification time to compare, and checking every source on every request would cost what the cache saves.
 
-When translations change, the application clears or rebuilds the entries for them. `forget()` removes one entry: the
-one for a key and a locale. The next load for that key and locale reads the source again and stores the result.
+When translations change, the application clears or rebuilds the entries for them:
+
+| Method                          | Removes                                                        |
+|---------------------------------|----------------------------------------------------------------|
+| `forget($cacheKey, $locale)`    | The entry of one cache key for one locale.                     |
+| `forgetAll($cacheKey)`          | The entries of one cache key for every locale it has cached. |
 
 ```php
-$cache->forget('validation', new Locale('en-GB'));
+$cache->forget('validation-translations-v1', new Locale('en-GB'));
+$cache->forgetAll('validation-translations-v1');
 ```
+
+`forgetAll()` finds the entries by their file names, so it does not need to know which locales were cached. It leaves
+the entries of every other cache key, and the temporary files of writes still in progress, alone. Forgetting an entry
+or a cache key that has nothing cached does nothing. The next load for a forgotten locale reads the source again and
+stores the result.
 
 :::caution
 With `opcache.validate_timestamps` turned off, OPcache keeps serving the compiled version of a cache file that has

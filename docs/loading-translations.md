@@ -16,9 +16,9 @@ interface TranslationLoader
 ```
 
 A loader does not fall back to another locale. Loading `nl-NL` reads what the source has for `nl-NL` and nothing else:
-not `nl`, and not a default locale. A source that has nothing for a locale gives an empty catalogue, not an exception.
-A source that exists but cannot be read, or holds something that is not a translation, throws a
-`TranslationLoaderException`.
+not `nl`, and not a default locale. An empty catalogue means the source exists and has nothing for that locale; a
+source that does not exist, cannot be read, or holds something that is not a translation throws a
+`TranslationLoaderException`. See [source availability](#source-availability).
 
 ## Catalogues
 
@@ -40,12 +40,58 @@ $catalogue->get('validation');              // null
 ```
 
 `has()` and `get()` match the exact key. There is no fallback, no partial matching, and no locale matching in a
-catalogue. Every message has to be a string; anything else throws an `InvalidTranslationCatalogueException`.
+catalogue. `$messages` is an `array<string, string>`: a key that breaks the [key rules](#keys), or a message that is
+not a string, throws an `InvalidTranslationCatalogueException`. A catalogue does not know which source its messages
+came from.
 
-:::note
-PHP stores an array key that is a decimal integer, such as `404`, as an `int`, so a key in `$messages` can be an
-`int`. `has('404')` and `get('404')` find it all the same.
-:::
+## Translation source rules
+
+These rules hold for every loader, for catalogues built by hand, and for the cache.
+
+### Keys
+
+A translation key is a string that is not empty. It can contain spaces and punctuation, such as `Log out` or
+`Are you sure?`, and it does not have to use dots.
+
+A key that is a bare decimal integer, such as `404`, `0`, or `-1`, is not supported. PHP turns such a string into an
+`int` when it is used as an array key, so it cannot stay a string key in a catalogue. A loader that would produce one
+throws a `TranslationLoaderException`. Namespace the key instead, such as `errors.404` or `http.500`, or give the loader
+a prefix, which turns a source key `404` into `errors.404`. Keys such as `404.message`, `007`, and `1.5` are fine,
+because PHP keeps them as strings.
+
+### Duplicate JSON keys
+
+A JSON translation file that has the same key twice in one object is invalid. Dirthara 0.1 uses PHP's own JSON decoder,
+which does not report duplicate keys, and does not detect them itself. Make sure every key in a JSON file is unique:
+which of two equal keys takes effect is not defined, and may change.
+
+### Source availability
+
+| Situation                                                      | Result                          |
+|----------------------------------------------------------------|---------------------------------|
+| The configured source exists and has no translations for the locale. | An empty catalogue.       |
+| The configured source does not exist, cannot be read, or is malformed. | A `TranslationLoaderException`. |
+
+For the PHP and JSON loaders, the source is the configured `path` directory, which has to exist: a typo such as
+`translatons` throws rather than reading as a source without translations. A loader whose `path` is the root of the
+filesystem (`''` or `/`) does not check the root, because some Flysystem adapters do not report an empty root as an
+existing directory. For the database loader, the source is the table: a table without rows for the locale gives an
+empty catalogue, and a missing table throws.
+
+### Conflicts between loaders
+
+Within one source, a loader rejects a key it produces twice, where it can detect it: two PHP translations that flatten
+to the same key, or two database rows for the same locale and key. Two different loaders can still produce the same key
+for one locale, such as an application and a package that both define `validation.required`.
+
+Combining the catalogues of several loaders is not implemented yet. When it is, it follows these rules:
+
+- **By default, a key that two loaders produce is an error.**
+- **Overriding is opt-in.** One loader's translation replaces another's only when the caller asks for an override
+  policy.
+- **Precedence comes from the order the caller gives the loaders in.** It never depends on the order files are listed
+  in or rows are returned in.
+- **A catalogue stays unaware of where its messages came from.** Combining happens outside it.
 
 ## Prefixes
 
@@ -96,7 +142,7 @@ translations/
 ```
 
 Only the `.php` files directly in the locale's directory are loaded. Other files and subdirectories are ignored. A
-locale without a directory gives an empty catalogue. The files are loaded in the order of their paths, whatever order
+locale without a directory gives an empty catalogue, but a `path` that does not exist throws. The files are loaded in the order of their paths, whatever order
 the filesystem lists them in.
 
 A file returns an array. Its file name is the first segment of every key in it, and nested arrays add a segment each:
@@ -154,7 +200,7 @@ translations/
     nl-NL.json
 ```
 
-A locale without a file gives an empty catalogue. The file is an object whose keys are the translation keys and whose
+A locale without a file gives an empty catalogue, but a `path` that does not exist throws. The file is an object whose keys are the translation keys and whose
 values are the translations:
 
 ```json
@@ -167,11 +213,7 @@ values are the translations:
 The keys are used as they are, so a key can be a whole sentence. With the prefix `application`, these become
 `application.Welcome` and `application.Log out`. JSON is not flattened: a value that is an object, an array, `null`, a
 boolean, or a number is rejected. A file that is not valid JSON, or whose top level is not an object, is rejected too.
-
-:::note
-PHP's JSON decoder keeps the last of two equal keys in one object, so a JSON file cannot be checked for a key it
-defines twice.
-:::
+Keys have to be unique; see [duplicate JSON keys](#duplicate-json-keys).
 
 ## Database
 
@@ -206,8 +248,8 @@ The loader only reads. It does not create, migrate, or change the table, so the 
 example with a migration. It reads the rows whose `locale` is exactly the requested locale's code: `nl-NL` does not
 read `nl`, `nl-nl`, or `nl_NL` rows, even when the column's collation would match them.
 
-Every `key` and `translation` has to be a string; a `NULL` or a number is rejected rather than converted. A key that
-appears in two rows for the same locale is rejected too, instead of letting the order the database returns rows in
+Every `key` and `translation` has to be a string; a `NULL` or a number is rejected rather than converted, and a key has
+to follow the [key rules](#keys) once the prefix is applied. A key that appears in two rows for the same locale is rejected too, instead of letting the order the database returns rows in
 decide which one wins. A failure in the database, such as a missing table, is reported as a
 `TranslationLoaderException` with the database's exception as its previous exception, so a caller never has to catch a
 `dirthara/database` exception. Neither the message nor the context of an exception contains a translation.

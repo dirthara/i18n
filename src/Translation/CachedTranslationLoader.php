@@ -15,7 +15,7 @@ final readonly class CachedTranslationLoader implements TranslationLoader
     public function __construct(
         private TranslationLoader $loader,
         private TranslationCache $cache,
-        private string $key,
+        private string $cacheKey,
     ) {}
 
     /**
@@ -23,7 +23,7 @@ final readonly class CachedTranslationLoader implements TranslationLoader
      */
     public function load(Locale $locale): TranslationCatalogue
     {
-        $cached = $this->cache->get($this->key, $locale);
+        $cached = $this->cache->get($this->cacheKey, $locale);
 
         if ($cached !== null) {
             return $cached;
@@ -35,7 +35,7 @@ final readonly class CachedTranslationLoader implements TranslationLoader
             throw TranslationLoaderException::localeMismatch($locale, $catalogue->locale);
         }
 
-        $this->cache->put($this->key, $catalogue);
+        $this->cache->put($this->cacheKey, $catalogue);
 
         return $catalogue;
     }

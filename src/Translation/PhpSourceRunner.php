@@ -16,12 +16,6 @@ use function stream_get_wrappers;
 use function stream_wrapper_register;
 
 /**
- * Runs PHP source read from any Flysystem filesystem, local or remote.
- *
- * Require only accepts a path, so the source is served to it through a stream wrapper instead of being copied to a
- * temporary file. Nothing touches the local disk, and `__FILE__`, `__DIR__`, and error messages name the source's own
- * path, such as `dirthara-i18n://translations/en-GB/validation.php`.
- *
  * @internal
  */
 final class PhpSourceRunner

@@ -15,6 +15,7 @@ use Dirthara\I18n\Exception\I18nException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use League\Flysystem\UnableToCheckFileExistence;
 use Dirthara\I18n\Translation\JsonTranslationLoader;
+use League\Flysystem\UnableToCheckDirectoryExistence;
 use Dirthara\I18n\Exception\TranslationLoaderException;
 use League\Flysystem\InMemory\InMemoryFilesystemAdapter;
 use Dirthara\I18n\Exception\InvalidTranslationPrefixException;
@@ -49,7 +50,6 @@ final class JsonTranslationLoaderTest extends TestCase
                 "Welcome": "Welcome",
                 "Log out": "Log out",
                 "validation.required": "The {attribute} field is required.",
-                "": "Empty key",
                 "Unicode": "Café"
             }
             JSON);
@@ -61,7 +61,6 @@ final class JsonTranslationLoaderTest extends TestCase
                 'Welcome' => 'Welcome',
                 'Log out' => 'Log out',
                 'validation.required' => 'The {attribute} field is required.',
-                '' => 'Empty key',
                 'Unicode' => 'Café',
             ],
             $catalogue->messages,
@@ -77,13 +76,61 @@ final class JsonTranslationLoaderTest extends TestCase
     }
 
     #[Test]
-    public function it_loads_a_key_php_stores_as_an_integer(): void
+    #[DataProvider('invalidKeys')]
+    public function it_rejects_an_empty_or_integer_key(string $key): void
     {
-        $this->filesystem->write('translations/en-GB.json', '{"404": "Not found"}');
+        $this->filesystem->write('translations/en-GB.json', sprintf(
+            '{"Valid": "Valid", "%s": "Secret translation"}',
+            $key,
+        ));
 
-        $catalogue = $this->loader()->load(new Locale('en-GB'));
+        $exception = $this->failure($this->loader(), new Locale('en-GB'));
 
-        self::assertSame('Not found', $catalogue->get('404'));
+        self::assertSame(
+            sprintf(
+                'The translation key "%s" in "translations/en-GB.json" is not valid: a key is a string that is not '
+                . 'empty and not a decimal integer.',
+                $key,
+            ),
+            $exception->getMessage(),
+        );
+        self::assertSame(['path' => 'translations/en-GB.json', 'key' => $key], $exception->context);
+        self::assertStringNotContainsString('Secret', $exception->getMessage());
+    }
+
+    #[Test]
+    public function it_accepts_an_integer_key_once_it_is_prefixed(): void
+    {
+        $this->filesystem->write('translations/en-GB.json', '{"404": "Not found", "-1": "Negative"}');
+
+        $catalogue = $this->loader(prefix: 'errors')->load(new Locale('en-GB'));
+
+        self::assertSame(['errors.404' => 'Not found', 'errors.-1' => 'Negative'], $catalogue->messages);
+    }
+
+    #[Test]
+    public function it_rejects_a_source_directory_that_does_not_exist(): void
+    {
+        $this->filesystem->write('translations/en-GB.json', '{"Welcome": "Welcome"}');
+
+        $exception = $this->failure(new JsonTranslationLoader($this->filesystem, 'translatons/'), new Locale('fr-FR'));
+
+        self::assertSame('The translation source "translatons" does not exist.', $exception->getMessage());
+        self::assertSame(['path' => 'translatons'], $exception->context);
+    }
+
+    #[Test]
+    public function it_reports_a_source_directory_it_cannot_check(): void
+    {
+        $filesystem = $this->createStub(FilesystemReader::class);
+        $filesystem
+            ->method('directoryExists')
+            ->willThrowException(UnableToCheckDirectoryExistence::forLocation('translations'));
+
+        $exception = $this->failure(new JsonTranslationLoader($filesystem, 'translations'), new Locale('en-GB'));
+
+        self::assertSame(['path' => 'translations/en-GB.json'], $exception->context);
+        self::assertInstanceOf(UnableToCheckDirectoryExistence::class, $exception->getPrevious());
     }
 
     #[Test]
@@ -180,6 +227,7 @@ final class JsonTranslationLoaderTest extends TestCase
     public function it_reports_a_file_it_cannot_check(): void
     {
         $filesystem = $this->createStub(FilesystemReader::class);
+        $filesystem->method('directoryExists')->willReturn(true);
         $filesystem
             ->method('fileExists')
             ->willThrowException(UnableToCheckFileExistence::forLocation('translations/en-GB.json'));
@@ -195,6 +243,7 @@ final class JsonTranslationLoaderTest extends TestCase
     public function it_reports_a_file_it_cannot_read(): void
     {
         $filesystem = $this->createStub(FilesystemReader::class);
+        $filesystem->method('directoryExists')->willReturn(true);
         $filesystem->method('fileExists')->willReturn(true);
         $filesystem->method('read')->willThrowException(UnableToReadFile::fromLocation('translations/en-GB.json'));
 
@@ -202,6 +251,17 @@ final class JsonTranslationLoaderTest extends TestCase
 
         self::assertSame(['path' => 'translations/en-GB.json'], $exception->context);
         self::assertInstanceOf(UnableToReadFile::class, $exception->getPrevious());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidKeys(): iterable
+    {
+        yield 'empty' => [''];
+        yield 'integer' => ['404'];
+        yield 'zero' => ['0'];
+        yield 'negative integer' => ['-1'];
     }
 
     /**

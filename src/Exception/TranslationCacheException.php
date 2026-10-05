@@ -36,72 +36,112 @@ final class TranslationCacheException extends RuntimeException implements I18nEx
         );
     }
 
-    public static function writeFailed(string $path, string $key, Locale $locale, ?Throwable $previous = null): self
-    {
+    public static function writeFailed(
+        string $path,
+        string $cacheKey,
+        Locale $locale,
+        ?Throwable $previous = null,
+    ): self {
         return new self(
             message: sprintf(
                 'Unable to write the translation cache entry "%s" for locale "%s" to "%s".',
-                self::printable($key),
+                self::printable($cacheKey),
                 $locale->code,
                 self::printable($path),
             ),
             previous: $previous,
-            context: ['path' => $path, 'key' => $key, 'locale' => $locale->code],
+            context: ['path' => $path, 'cacheKey' => $cacheKey, 'locale' => $locale->code],
         );
     }
 
-    public static function renameFailed(string $path, string $key, Locale $locale, ?Throwable $previous = null): self
-    {
+    public static function renameFailed(
+        string $path,
+        string $cacheKey,
+        Locale $locale,
+        ?Throwable $previous = null,
+    ): self {
         return new self(
             message: sprintf(
                 'Unable to move the translation cache entry "%s" for locale "%s" into place at "%s".',
-                self::printable($key),
+                self::printable($cacheKey),
                 $locale->code,
                 self::printable($path),
             ),
             previous: $previous,
-            context: ['path' => $path, 'key' => $key, 'locale' => $locale->code],
+            context: ['path' => $path, 'cacheKey' => $cacheKey, 'locale' => $locale->code],
         );
     }
 
-    public static function loadFailed(string $path, string $key, Locale $locale, Throwable $previous): self
+    public static function loadFailed(string $path, string $cacheKey, Locale $locale, Throwable $previous): self
     {
         return new self(
             message: sprintf(
                 'Unable to load the translation cache entry "%s" for locale "%s" from "%s".',
-                self::printable($key),
+                self::printable($cacheKey),
                 $locale->code,
                 self::printable($path),
             ),
             previous: $previous,
-            context: ['path' => $path, 'key' => $key, 'locale' => $locale->code],
+            context: ['path' => $path, 'cacheKey' => $cacheKey, 'locale' => $locale->code],
         );
     }
 
-    public static function malformedEntry(string $path, string $key, Locale $locale): self
+    public static function malformedEntry(string $path, string $cacheKey, Locale $locale): self
     {
         return new self(
             message: sprintf(
                 'The translation cache entry "%s" for locale "%s" at "%s" does not return an array of strings.',
-                self::printable($key),
+                self::printable($cacheKey),
                 $locale->code,
                 self::printable($path),
             ),
-            context: ['path' => $path, 'key' => $key, 'locale' => $locale->code],
+            context: ['path' => $path, 'cacheKey' => $cacheKey, 'locale' => $locale->code],
         );
     }
 
-    public static function removeFailed(string $path, string $key, Locale $locale, ?Throwable $previous = null): self
+    public static function invalidKey(string $path, string $cacheKey, Locale $locale, string $key): self
     {
         return new self(
             message: sprintf(
-                'Unable to remove the translation cache entry "%s" for locale "%s" at "%s".',
+                'The translation cache entry "%s" for locale "%s" at "%s" holds the translation key "%s", which is not '
+                . 'valid: a key is a string that is not empty and not a decimal integer.',
+                self::printable($cacheKey),
+                $locale->code,
+                self::printable($path),
                 self::printable($key),
+            ),
+            context: ['path' => $path, 'cacheKey' => $cacheKey, 'locale' => $locale->code, 'key' => $key],
+        );
+    }
+
+    public static function removeFailed(
+        string $path,
+        string $cacheKey,
+        Locale $locale,
+        ?Throwable $previous = null,
+    ): self {
+        return new self(
+            message: sprintf(
+                'Unable to remove the translation cache entry "%s" for locale "%s" at "%s".',
+                self::printable($cacheKey),
                 $locale->code,
                 self::printable($path),
             ),
             previous: $previous,
-            context: ['path' => $path, 'key' => $key, 'locale' => $locale->code],
+            context: ['path' => $path, 'cacheKey' => $cacheKey, 'locale' => $locale->code],
+        );
+    }
+
+    public static function removeAllFailed(string $path, string $cacheKey, ?Throwable $previous = null): self
+    {
+        return new self(
+            message: sprintf(
+                'Unable to remove every translation cache entry "%s" from "%s".',
+                self::printable($cacheKey),
+                self::printable($path),
+            ),
+            previous: $previous,
+            context: ['path' => $path, 'cacheKey' => $cacheKey],
         );
     }
 }

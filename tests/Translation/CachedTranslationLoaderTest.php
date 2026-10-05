@@ -134,6 +134,30 @@ final class CachedTranslationLoaderTest extends TestCase
     }
 
     #[Test]
+    public function it_loads_every_locale_again_after_all_of_its_entries_are_forgotten(): void
+    {
+        $source = new CountingTranslationLoader([
+            'en-GB' => ['welcome' => 'Welcome'],
+            'nl-NL' => ['welcome' => 'Welkom'],
+        ]);
+        $other = new CountingTranslationLoader(['en-GB' => ['welcome' => 'Other']]);
+        $loader = new CachedTranslationLoader($source, $this->cache, 'application');
+        $otherLoader = new CachedTranslationLoader($other, $this->cache, 'other');
+
+        $loader->load(new Locale('en-GB'));
+        $loader->load(new Locale('nl-NL'));
+        $otherLoader->load(new Locale('en-GB'));
+
+        $this->cache->forgetAll('application');
+
+        self::assertSame('Welcome', $loader->load(new Locale('en-GB'))->get('welcome'));
+        self::assertSame('Welkom', $loader->load(new Locale('nl-NL'))->get('welcome'));
+        self::assertSame('Other', $otherLoader->load(new Locale('en-GB'))->get('welcome'));
+        self::assertSame(4, $source->loads);
+        self::assertSame(1, $other->loads);
+    }
+
+    #[Test]
     public function it_fails_on_a_malformed_entry_instead_of_loading_again(): void
     {
         file_put_contents(
@@ -147,7 +171,7 @@ final class CachedTranslationLoaderTest extends TestCase
             $loader->load(new Locale('en-GB'));
             self::fail('Expected a TranslationCacheException.');
         } catch (TranslationCacheException $exception) {
-            self::assertSame('application', $exception->context['key']);
+            self::assertSame('application', $exception->context['cacheKey']);
         }
 
         self::assertSame(0, $source->loads);

@@ -27,6 +27,14 @@ final class TranslationLoaderException extends RuntimeException implements I18nE
         $this->context = $context;
     }
 
+    public static function missingSource(string $path): self
+    {
+        return new self(
+            message: sprintf('The translation source "%s" does not exist.', self::printable($path)),
+            context: ['path' => $path],
+        );
+    }
+
     public static function unreadableSource(string $path, FilesystemException $previous): self
     {
         return new self(
@@ -75,6 +83,19 @@ final class TranslationLoaderException extends RuntimeException implements I18nE
         return new self(
             message: sprintf(
                 'The translation "%s" in "%s" is not a string or a group of translations.',
+                self::printable($key),
+                self::printable($path),
+            ),
+            context: ['path' => $path, 'key' => $key],
+        );
+    }
+
+    public static function invalidKey(string $path, string $key): self
+    {
+        return new self(
+            message: sprintf(
+                'The translation key "%s" in "%s" is not valid: a key is a string that is not empty and not a decimal '
+                . 'integer.',
                 self::printable($key),
                 self::printable($path),
             ),
@@ -139,6 +160,20 @@ final class TranslationLoaderException extends RuntimeException implements I18nE
                 $column,
             ),
             context: ['table' => $table, 'locale' => $locale->code, 'column' => $column],
+        );
+    }
+
+    public static function invalidDatabaseKey(string $table, Locale $locale, string $key): self
+    {
+        return new self(
+            message: sprintf(
+                'The translation key "%s" for locale "%s" in table "%s" is not valid: a key is a string that is not '
+                . 'empty and not a decimal integer.',
+                self::printable($key),
+                $locale->code,
+                self::printable($table),
+            ),
+            context: ['table' => $table, 'locale' => $locale->code, 'key' => $key],
         );
     }
 

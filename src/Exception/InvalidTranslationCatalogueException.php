@@ -24,6 +24,19 @@ final class InvalidTranslationCatalogueException extends InvalidArgumentExceptio
         $this->context = $context;
     }
 
+    public static function invalidKey(Locale $locale, string $key): self
+    {
+        return new self(
+            message: sprintf(
+                'The translation key "%s" for locale "%s" is not valid: a key is a string that is not empty and not a '
+                . 'decimal integer.',
+                self::printable($key),
+                $locale->code,
+            ),
+            context: ['locale' => $locale->code, 'key' => $key],
+        );
+    }
+
     public static function nonStringMessage(Locale $locale, string $key): self
     {
         return new self(

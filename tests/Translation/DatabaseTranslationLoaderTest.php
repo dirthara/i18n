@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use League\Flysystem\Filesystem;
 use PHPUnit\Framework\Attributes\Test;
 use Dirthara\I18n\Exception\I18nException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Dirthara\Database\Exception\DatabaseException;
 use Dirthara\I18n\Translation\JsonTranslationLoader;
 use Dirthara\I18n\Tests\Fixtures\TranslationDatabase;
@@ -17,6 +18,7 @@ use Dirthara\I18n\Translation\DatabaseTranslationLoader;
 use League\Flysystem\InMemory\InMemoryFilesystemAdapter;
 use Dirthara\I18n\Exception\InvalidTranslationPrefixException;
 
+use function sprintf;
 use function json_encode;
 use function str_contains;
 
@@ -142,12 +144,12 @@ final class DatabaseTranslationLoaderTest extends TestCase
     #[Test]
     public function it_produces_the_same_catalogue_as_the_json_loader(): void
     {
-        $messages = ['Welcome' => 'Welcome', 'Log out' => 'Log out', '404' => 'Not found'];
+        $messages = ['Welcome' => 'Welcome', 'Log out' => 'Log out', 'Are you sure?' => 'Are you sure?'];
         $filesystem = new Filesystem(new InMemoryFilesystemAdapter());
         $filesystem->write('translations/en-GB.json', json_encode($messages, JSON_THROW_ON_ERROR));
 
         foreach ($messages as $key => $translation) {
-            $this->database->insert('en-GB', (string) $key, $translation);
+            $this->database->insert('en-GB', $key, $translation);
         }
 
         $locale = new Locale('en-GB');
@@ -208,6 +210,38 @@ final class DatabaseTranslationLoaderTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('invalidKeys')]
+    public function it_rejects_an_empty_or_integer_key(string $key): void
+    {
+        $this->database->insert('en-GB', $key, 'Secret translation');
+
+        $exception = $this->failure(new Locale('en-GB'));
+
+        self::assertSame(
+            sprintf(
+                'The translation key "%s" for locale "en-GB" in table "translations" is not valid: a key is a string '
+                . 'that is not empty and not a decimal integer.',
+                $key,
+            ),
+            $exception->getMessage(),
+        );
+        self::assertSame(['table' => 'translations', 'locale' => 'en-GB', 'key' => $key], $exception->context);
+        $this->assertDoesNotReveal('Secret', $exception);
+    }
+
+    #[Test]
+    public function it_accepts_an_integer_key_once_it_is_prefixed(): void
+    {
+        $this->database->insert('en-GB', '404', 'Not found');
+
+        $catalogue = new DatabaseTranslationLoader($this->database->database, prefix: 'errors')->load(
+            new Locale('en-GB'),
+        );
+
+        self::assertSame(['errors.404' => 'Not found'], $catalogue->messages);
+    }
+
+    #[Test]
     public function it_rejects_a_key_defined_twice_for_the_locale(): void
     {
         $this->database->insert('en-GB', 'welcome', 'First secret');
@@ -253,6 +287,16 @@ final class DatabaseTranslationLoaderTest extends TestCase
             $exception->getMessage(),
         );
         self::assertSame("missing\ntable", $exception->context['table']);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidKeys(): iterable
+    {
+        yield 'empty' => [''];
+        yield 'integer' => ['404'];
+        yield 'negative integer' => ['-1'];
     }
 
     private function loader(): DatabaseTranslationLoader

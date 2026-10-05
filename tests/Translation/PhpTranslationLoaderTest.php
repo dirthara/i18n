@@ -21,6 +21,7 @@ use League\Flysystem\UnableToListContents;
 use Dirthara\I18n\Translation\PhpSourceRunner;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Dirthara\I18n\Translation\PhpTranslationLoader;
+use League\Flysystem\UnableToCheckDirectoryExistence;
 use Dirthara\I18n\Tests\Fixtures\ForeignStreamWrapper;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Dirthara\I18n\Exception\TranslationLoaderException;
@@ -65,6 +66,48 @@ final class PhpTranslationLoaderTest extends TestCase
 
         self::assertSame('en-GB', $catalogue->locale->code);
         self::assertSame([], $catalogue->messages);
+    }
+
+    #[Test]
+    public function it_rejects_a_source_directory_that_does_not_exist(): void
+    {
+        $this->filesystem->write('translations/en-GB/validation.php', self::VALIDATION);
+
+        $exception = $this->failure(new PhpTranslationLoader($this->filesystem, '/translatons/'), new Locale('fr-FR'));
+
+        self::assertSame('The translation source "translatons" does not exist.', $exception->getMessage());
+        self::assertSame(['path' => 'translatons'], $exception->context);
+    }
+
+    #[Test]
+    public function it_reports_a_source_directory_it_cannot_check(): void
+    {
+        $filesystem = $this->createStub(FilesystemReader::class);
+        $filesystem
+            ->method('directoryExists')
+            ->willThrowException(UnableToCheckDirectoryExistence::forLocation('translations'));
+
+        $exception = $this->failure(new PhpTranslationLoader($filesystem, 'translations'), new Locale('en-GB'));
+
+        self::assertSame(['path' => 'translations/en-GB'], $exception->context);
+        self::assertInstanceOf(UnableToCheckDirectoryExistence::class, $exception->getPrevious());
+    }
+
+    #[Test]
+    public function it_loads_from_a_root_the_adapter_does_not_report_as_a_directory(): void
+    {
+        $filesystem = $this->createStub(FilesystemReader::class);
+        $filesystem
+            ->method('directoryExists')
+            ->willReturnCallback(static fn(string $location): bool => $location === 'en-GB');
+        $filesystem
+            ->method('listContents')
+            ->willReturn(new DirectoryListing([new FileAttributes('en-GB/messages.php')]));
+        $filesystem->method('read')->willReturn($this->source("['hello' => 'Hello']"));
+
+        $catalogue = new PhpTranslationLoader($filesystem, '/')->load(new Locale('en-GB'));
+
+        self::assertSame(['messages.hello' => 'Hello'], $catalogue->messages);
     }
 
     #[Test]

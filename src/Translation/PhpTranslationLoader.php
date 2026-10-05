@@ -13,7 +13,7 @@ use Dirthara\I18n\Exception\TranslationLoaderException;
 use Dirthara\I18n\Exception\InvalidTranslationPrefixException;
 
 use function sort;
-use function ltrim;
+use function trim;
 use function substr;
 use function basename;
 use function is_array;
@@ -46,9 +46,10 @@ final readonly class PhpTranslationLoader implements TranslationLoader
      */
     public function load(Locale $locale): TranslationCatalogue
     {
+        $source = trim($this->path, characters: '/');
         $messages = [];
 
-        foreach ($this->files(ltrim($this->path . '/' . $locale->code, characters: '/')) as $file) {
+        foreach ($this->files($source, $source === '' ? $locale->code : $source . '/' . $locale->code) as $file) {
             // @mago-expect analysis:mixed-assignment
             $translations = $this->runner->run($file, $this->read($file));
 
@@ -67,11 +68,15 @@ final readonly class PhpTranslationLoader implements TranslationLoader
      *
      * @throws TranslationLoaderException
      */
-    private function files(string $directory): array
+    private function files(string $source, string $directory): array
     {
         $files = [];
 
         try {
+            if ($source !== '' && !$this->filesystem->directoryExists($source)) {
+                throw TranslationLoaderException::missingSource($source);
+            }
+
             if (!$this->filesystem->directoryExists($directory)) {
                 return [];
             }

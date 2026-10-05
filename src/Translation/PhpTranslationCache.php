@@ -20,8 +20,10 @@ use function strlen;
 use function unlink;
 use function bin2hex;
 use function is_file;
+use function scandir;
 use function is_array;
 use function is_string;
+use function preg_match;
 use function var_export;
 use function random_bytes;
 use function file_put_contents;
@@ -30,21 +32,18 @@ use function restore_error_handler;
 
 use const SORT_STRING;
 
-/**
- * Stores each catalogue as a PHP file in a local directory, so a hit is a plain include that OPcache can serve.
- *
- * An entry is written to a temporary file in the same directory and renamed into place, which is atomic on one
- * filesystem: a concurrent request sees the previous entry or the new one, never part of one. The file name is a hash
- * of the cache key, so no key can reach outside the directory.
- */
 final readonly class PhpTranslationCache implements TranslationCache
 {
+    private TranslationKeyRule $keys;
+
     /**
      * @throws TranslationCacheException
      */
     public function __construct(
         private string $path,
     ) {
+        $this->keys = new TranslationKeyRule();
+
         if ($path === '') {
             throw TranslationCacheException::unusableDirectory($path);
         }
@@ -53,9 +52,9 @@ final readonly class PhpTranslationCache implements TranslationCache
     /**
      * @throws TranslationCacheException
      */
-    public function get(string $key, Locale $locale): ?TranslationCatalogue
+    public function get(string $cacheKey, Locale $locale): ?TranslationCatalogue
     {
-        $file = $this->file($key, $locale);
+        $file = $this->file($cacheKey, $locale);
 
         if (!is_file($file)) {
             return null;
@@ -67,35 +66,24 @@ final readonly class PhpTranslationCache implements TranslationCache
             // @mago-expect analysis:mixed-assignment
             [$messages, $error] = $this->attempt(static fn(): mixed => include $file);
         } catch (Throwable $exception) {
-            throw TranslationCacheException::loadFailed($file, $key, $locale, previous: $exception);
+            throw TranslationCacheException::loadFailed($file, $cacheKey, $locale, previous: $exception);
         }
 
         if ($error !== null) {
-            throw TranslationCacheException::loadFailed($file, $key, $locale, previous: $error);
+            throw TranslationCacheException::loadFailed($file, $cacheKey, $locale, previous: $error);
         }
 
-        if (!is_array($messages)) {
-            throw TranslationCacheException::malformedEntry($file, $key, $locale);
-        }
-
-        // @mago-expect analysis:mixed-assignment
-        foreach ($messages as $message) {
-            if (!is_string($message)) {
-                throw TranslationCacheException::malformedEntry($file, $key, $locale);
-            }
-        }
-
-        return new TranslationCatalogue($locale, $messages);
+        return new TranslationCatalogue($locale, $this->checked($messages, $file, $cacheKey, $locale));
     }
 
     /**
      * @throws TranslationCacheException
      */
-    public function put(string $key, TranslationCatalogue $catalogue): void
+    public function put(string $cacheKey, TranslationCatalogue $catalogue): void
     {
         $this->createDirectory();
 
-        $file = $this->file($key, $catalogue->locale);
+        $file = $this->file($cacheKey, $catalogue->locale);
         $temporary = $file . '.' . bin2hex(random_bytes(8)) . '.tmp';
         $contents = $this->compile($catalogue->messages);
 
@@ -104,7 +92,7 @@ final readonly class PhpTranslationCache implements TranslationCache
         if ($written !== strlen($contents)) {
             $this->attempt(static fn(): bool => unlink($temporary));
 
-            throw TranslationCacheException::writeFailed($file, $key, $catalogue->locale, previous: $error);
+            throw TranslationCacheException::writeFailed($file, $cacheKey, $catalogue->locale, previous: $error);
         }
 
         [$renamed, $error] = $this->attempt(static fn(): bool => rename($temporary, $file));
@@ -112,16 +100,16 @@ final readonly class PhpTranslationCache implements TranslationCache
         if (!$renamed) {
             $this->attempt(static fn(): bool => unlink($temporary));
 
-            throw TranslationCacheException::renameFailed($file, $key, $catalogue->locale, previous: $error);
+            throw TranslationCacheException::renameFailed($file, $cacheKey, $catalogue->locale, previous: $error);
         }
     }
 
     /**
      * @throws TranslationCacheException
      */
-    public function forget(string $key, Locale $locale): void
+    public function forget(string $cacheKey, Locale $locale): void
     {
-        $file = $this->file($key, $locale);
+        $file = $this->file($cacheKey, $locale);
 
         if (!is_file($file)) {
             return;
@@ -130,13 +118,74 @@ final readonly class PhpTranslationCache implements TranslationCache
         [$removed, $error] = $this->attempt(static fn(): bool => unlink($file));
 
         if (!$removed && is_file($file)) {
-            throw TranslationCacheException::removeFailed($file, $key, $locale, previous: $error);
+            throw TranslationCacheException::removeFailed($file, $cacheKey, $locale, previous: $error);
         }
     }
 
-    private function file(string $key, Locale $locale): string
+    /**
+     * @throws TranslationCacheException
+     */
+    public function forgetAll(string $cacheKey): void
     {
-        return $this->path . '/' . hash('sha256', $key) . '.' . $locale->code . '.php';
+        if (!is_dir($this->path)) {
+            return;
+        }
+
+        [$names, $error] = $this->attempt(fn(): array|false => scandir($this->path));
+
+        if ($names === false) {
+            throw TranslationCacheException::removeAllFailed($this->path, $cacheKey, previous: $error);
+        }
+
+        $entry = '/^' . hash('sha256', $cacheKey) . '\.[A-Za-z0-9-]+\.php\z/';
+
+        foreach ($names as $name) {
+            if (preg_match($entry, $name) !== 1) {
+                continue;
+            }
+
+            $file = $this->path . '/' . $name;
+
+            [$removed, $error] = $this->attempt(static fn(): bool => unlink($file));
+
+            if (!$removed && is_file($file)) {
+                throw TranslationCacheException::removeAllFailed($file, $cacheKey, previous: $error);
+            }
+        }
+    }
+
+    /**
+     * @return array<string, string>
+     *
+     * @throws TranslationCacheException
+     */
+    private function checked(mixed $messages, string $file, string $cacheKey, Locale $locale): array
+    {
+        if (!is_array($messages)) {
+            throw TranslationCacheException::malformedEntry($file, $cacheKey, $locale);
+        }
+
+        $checked = [];
+
+        // @mago-expect analysis:mixed-assignment
+        foreach ($messages as $key => $message) {
+            if (!is_string($key) || !$this->keys->allows($key)) {
+                throw TranslationCacheException::invalidKey($file, $cacheKey, $locale, (string) $key);
+            }
+
+            if (!is_string($message)) {
+                throw TranslationCacheException::malformedEntry($file, $cacheKey, $locale);
+            }
+
+            $checked[$key] = $message;
+        }
+
+        return $checked;
+    }
+
+    private function file(string $cacheKey, Locale $locale): string
+    {
+        return $this->path . '/' . hash('sha256', $cacheKey) . '.' . $locale->code . '.php';
     }
 
     /**
@@ -166,8 +215,6 @@ final readonly class PhpTranslationCache implements TranslationCache
     }
 
     /**
-     * Runs a filesystem function with its warning captured, so a failure can be reported as an exception instead.
-     *
      * @template T
      *
      * @param Closure(): T $operation

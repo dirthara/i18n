@@ -18,6 +18,8 @@ final readonly class DatabaseTranslationLoader implements TranslationLoader
 {
     private TranslationPrefix $prefix;
 
+    private TranslationKeyRule $keys;
+
     /**
      * @throws InvalidTranslationPrefixException
      */
@@ -27,6 +29,7 @@ final readonly class DatabaseTranslationLoader implements TranslationLoader
         ?string $prefix = null,
     ) {
         $this->prefix = new TranslationPrefix($prefix);
+        $this->keys = new TranslationKeyRule();
     }
 
     /**
@@ -66,6 +69,10 @@ final readonly class DatabaseTranslationLoader implements TranslationLoader
             }
 
             $prefixed = $this->prefix->apply($key);
+
+            if (!$this->keys->allows($prefixed)) {
+                throw TranslationLoaderException::invalidDatabaseKey($this->table, $locale, $prefixed);
+            }
 
             if (array_key_exists($prefixed, $messages)) {
                 throw TranslationLoaderException::duplicateDatabaseKey($this->table, $locale, $key);

@@ -13,7 +13,7 @@ use Dirthara\I18n\Contract\TranslationLoader;
 use Dirthara\I18n\Exception\TranslationLoaderException;
 use Dirthara\I18n\Exception\InvalidTranslationPrefixException;
 
-use function ltrim;
+use function trim;
 use function is_string;
 use function json_decode;
 use function get_object_vars;
@@ -24,6 +24,8 @@ final readonly class JsonTranslationLoader implements TranslationLoader
 {
     private TranslationPrefix $prefix;
 
+    private TranslationKeyRule $keys;
+
     /**
      * @throws InvalidTranslationPrefixException
      */
@@ -33,6 +35,7 @@ final readonly class JsonTranslationLoader implements TranslationLoader
         ?string $prefix = null,
     ) {
         $this->prefix = new TranslationPrefix($prefix);
+        $this->keys = new TranslationKeyRule();
     }
 
     /**
@@ -40,9 +43,14 @@ final readonly class JsonTranslationLoader implements TranslationLoader
      */
     public function load(Locale $locale): TranslationCatalogue
     {
-        $file = ltrim($this->path . '/' . $locale->code . '.json', characters: '/');
+        $source = trim($this->path, characters: '/');
+        $file = ($source === '' ? '' : $source . '/') . $locale->code . '.json';
 
         try {
+            if ($source !== '' && !$this->filesystem->directoryExists($source)) {
+                throw TranslationLoaderException::missingSource($source);
+            }
+
             if (!$this->filesystem->fileExists($file)) {
                 return new TranslationCatalogue($locale, []);
             }
@@ -71,7 +79,13 @@ final readonly class JsonTranslationLoader implements TranslationLoader
                 throw TranslationLoaderException::invalidTranslation($file, (string) $key);
             }
 
-            $messages[$this->prefix->apply((string) $key)] = $translation;
+            $prefixed = $this->prefix->apply((string) $key);
+
+            if (!$this->keys->allows($prefixed)) {
+                throw TranslationLoaderException::invalidKey($file, $prefixed);
+            }
+
+            $messages[$prefixed] = $translation;
         }
 
         return new TranslationCatalogue($locale, $messages);
