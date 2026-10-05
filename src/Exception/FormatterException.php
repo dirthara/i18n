@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Dirthara\I18n\Exception;
 
 use Throwable;
-use IntlException;
 use RuntimeException;
 use Dirthara\I18n\Locale;
 
@@ -29,7 +28,7 @@ final class FormatterException extends RuntimeException implements I18nException
         string $formatter,
         Locale $locale,
         string $style,
-        IntlException $previous,
+        ?Throwable $previous = null,
     ): self {
         return new self(
             message: sprintf(

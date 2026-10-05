@@ -26,6 +26,7 @@ cache keys, and prefixes, with control characters escaped in the message.
 | `InvalidCurrencyAmountException`       | `InvalidArgumentException` | An amount to format is `NAN`, `INF`, or `-INF`. Its context holds `locale`, `currency`, and `amount`. |
 | `CurrencyFormatterException`           | `RuntimeException`         | Intl cannot create a currency formatter for a locale and style, or fails to format an amount. |
 | `InvalidNumberException`               | `InvalidArgumentException` | A number to format is `NAN`, `INF`, or `-INF`, or an ordinal is not a whole number. |
+| `InvalidListItemException`             | `InvalidArgumentException` | An item of a list to format is not a string. Its context holds `formatter`, `locale`, `position`, and `type`. |
 | `FormatterException`                   | `RuntimeException`         | Intl cannot create a formatter, or fails to format a value, in any formatter but the currency formatter. |
 
 ## Loader failures
@@ -90,3 +91,4 @@ The amount itself is not part of an exception's message or context, unless it is
 | Intl fails to format a value.                                      | `FormatterException`      | `formatter`, `locale`, `style`, `intlCode`, `intlMessage`    |
 | A number is `NAN`, `INF`, or `-INF`.                                | `InvalidNumberException`  | `formatter`, `locale`, `number`                              |
 | An ordinal is not a whole number.                                  | `InvalidNumberException`  | `formatter`, `locale`, `number`                              |
+| An item of a list is not a string.                                 | `InvalidListItemException` | `formatter`, `locale`, `position`, `type`                   |
