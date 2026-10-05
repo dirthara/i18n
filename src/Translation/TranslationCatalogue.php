@@ -46,6 +46,8 @@ final readonly class TranslationCatalogue
 
     /**
      * @param array<string, string> $messages
+     *
+     * @internal
      */
     public static function trusted(Locale $locale, array $messages): self
     {

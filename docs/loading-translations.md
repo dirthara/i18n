@@ -44,13 +44,10 @@ catalogue. `$messages` is an `array<string, string>`: a key that breaks the [key
 not a string, throws an `InvalidTranslationCatalogueException`. A catalogue does not know which source its messages
 came from.
 
-`TranslationCatalogue::trusted($locale, $messages)` builds a catalogue without checking its messages. It is meant for
-messages that were checked before, such as a [trusted cache entry](caching-translations.md#trusting-entries); a
-catalogue built from anything else should use the constructor.
-
 ## Translation source rules
 
-These rules hold for every loader, for catalogues built by hand, and for the cache.
+These rules hold for every loader, for every catalogue, and for the cache, unless it is told to
+[trust its entries](caching-translations.md#trusting-entries).
 
 ### Keys
 

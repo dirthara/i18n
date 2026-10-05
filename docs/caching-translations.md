@@ -137,7 +137,8 @@ $cache = new PhpTranslationCache(
 ```
 
 A trusted entry that does not return an array, does not parse, or cannot be read still throws a
-`TranslationCacheException`. Its keys and messages are not checked, though.
+`TranslationCacheException`. Its keys and messages are not checked, though. Skipping the check is a setting of the
+cache only: a catalogue an application builds itself always goes through the constructor, which checks it.
 
 :::caution
 With `Trust`, an entry that was edited by hand or damaged, and holds an invalid key or a message that is not a string,
