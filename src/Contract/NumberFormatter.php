@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dirthara\I18n\Contract;
 
 use Dirthara\I18n\Locale;
-use Dirthara\I18n\Enum\NumberStyle;
+use Dirthara\I18n\Enum\CompactNumberStyle;
 
 interface NumberFormatter
 {
@@ -13,7 +13,7 @@ interface NumberFormatter
 
     public function format(int|float $number): string;
 
-    public function compact(int|float $number, NumberStyle $style = NumberStyle::Short): string;
+    public function compact(int|float $number, CompactNumberStyle $style = CompactNumberStyle::Short): string;
 
     public function scientific(int|float $number): string;
 

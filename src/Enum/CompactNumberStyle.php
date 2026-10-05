@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Enum;
 
-enum NumberStyle
+enum CompactNumberStyle
 {
     case Short;
     case Long;

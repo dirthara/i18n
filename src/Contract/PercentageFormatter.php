@@ -10,5 +10,5 @@ interface PercentageFormatter
 {
     public Locale $locale { get; }
 
-    public function format(int|float $value): string;
+    public function format(int|float $fraction): string;
 }
