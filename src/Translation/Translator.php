@@ -11,6 +11,8 @@ use Dirthara\I18n\Exception\I18nException;
 use Dirthara\I18n\Contract\Translator as TranslatorContract;
 
 use function strtr;
+use function is_int;
+use function is_finite;
 
 final readonly class Translator implements TranslatorContract
 {
@@ -61,12 +63,18 @@ final readonly class Translator implements TranslatorContract
      */
     private function pluralMessage(string $key, int|float $count): ?string
     {
-        $category = $this->pluralRules->category($count);
+        if (is_int($count) || is_finite($count)) {
+            $exact = $this->catalogue->get($key . '.' . $count);
+
+            if ($exact !== null) {
+                return $exact;
+            }
+        }
 
         return (
-            $this->catalogue->get($key . '.' . $count) ?? $this->catalogue->get(
-                $key . '.' . $category->value,
-            ) ?? $this->catalogue->get($key . '.' . PluralCategory::Other->value)
+            $this->catalogue->get($key . '.' . $this->pluralRules->category($count)->value) ?? $this->catalogue->get(
+                $key . '.' . PluralCategory::Other->value,
+            )
         );
     }
 

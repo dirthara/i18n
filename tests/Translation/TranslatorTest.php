@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Tests\Translation;
 
+use MessageFormatter;
+use ReflectionProperty;
 use Dirthara\I18n\Locale;
+use Dirthara\I18n\PluralRules;
 use PHPUnit\Framework\TestCase;
 use League\Flysystem\Filesystem;
 use PHPUnit\Framework\Attributes\Test;
 use Dirthara\I18n\Translation\Translator;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Dirthara\I18n\Exception\PluralRulesException;
 use Dirthara\I18n\Translation\PhpTranslationCache;
 use Dirthara\I18n\Translation\PhpTranslationLoader;
 use Dirthara\I18n\Translation\TranslationCatalogue;
@@ -19,6 +23,7 @@ use Dirthara\I18n\Translation\CachedTranslationLoader;
 use Dirthara\I18n\Exception\InvalidPluralCountException;
 use Dirthara\I18n\Translation\CombinedTranslationLoader;
 use League\Flysystem\InMemory\InMemoryFilesystemAdapter;
+use Dirthara\I18n\Tests\Fixtures\FailingMessageFormatter;
 use Dirthara\I18n\Contract\Translator as TranslatorContract;
 
 use const INF;
@@ -182,6 +187,37 @@ final class TranslatorTest extends TestCase
         self::assertSame('You owe a message.', $translator->translatePlural('inbox.messages', -1));
         self::assertSame('You have one and a half messages.', $translator->translatePlural('inbox.messages', 1.5));
         self::assertSame('You have 2 messages.', $translator->translatePlural('inbox.messages', 2));
+    }
+
+    #[Test]
+    public function it_uses_an_exact_count_without_working_out_the_plural_category(): void
+    {
+        $this->useFormatter('en-GB', new FailingMessageFormatter('en-GB', '{0}'));
+
+        try {
+            $translator = $this->translator([
+                'messages.0' => 'You have no messages.',
+                'messages.one' => 'You have {count} message.',
+                'messages.other' => 'You have {count} messages.',
+            ]);
+
+            self::assertSame('You have no messages.', $translator->translatePlural('messages', 0));
+            self::assertTrue($translator->hasPlural('messages', 0));
+
+            foreach ([
+                static fn(): string => $translator->translatePlural('messages', 2),
+                static fn(): bool => $translator->hasPlural('messages', 2),
+            ] as $call) {
+                try {
+                    $call();
+                    self::fail('Expected a PluralRulesException.');
+                } catch (PluralRulesException $exception) {
+                    self::assertSame(2, $exception->context['count']);
+                }
+            }
+        } finally {
+            $this->forgetFormatter('en-GB');
+        }
     }
 
     #[Test]
@@ -405,5 +441,25 @@ final class TranslatorTest extends TestCase
     private function translator(array $messages): Translator
     {
         return new Translator(new TranslationCatalogue(new Locale('en-GB'), $messages));
+    }
+
+    private function useFormatter(string $locale, MessageFormatter $formatter): void
+    {
+        $formatters = new ReflectionProperty(PluralRules::class, 'formatters');
+        /** @var array<string, MessageFormatter> $current */
+        $current = $formatters->getValue();
+        $current[$locale] = $formatter;
+
+        $formatters->setValue(null, $current);
+    }
+
+    private function forgetFormatter(string $locale): void
+    {
+        $formatters = new ReflectionProperty(PluralRules::class, 'formatters');
+        /** @var array<string, MessageFormatter> $current */
+        $current = $formatters->getValue();
+        unset($current[$locale]);
+
+        $formatters->setValue(null, $current);
     }
 }
