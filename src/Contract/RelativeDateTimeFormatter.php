@@ -7,6 +7,7 @@ namespace Dirthara\I18n\Contract;
 use DateTimeZone;
 use DateTimeInterface;
 use Dirthara\I18n\Locale;
+use Dirthara\I18n\Exception\I18nException;
 use Dirthara\I18n\Enum\RelativeDateTimeStyle;
 
 interface RelativeDateTimeFormatter
@@ -15,6 +16,9 @@ interface RelativeDateTimeFormatter
 
     public DateTimeZone $timezone { get; }
 
+    /**
+     * @throws I18nException
+     */
     public function format(
         DateTimeInterface $dateTime,
         DateTimeInterface $relativeTo,
