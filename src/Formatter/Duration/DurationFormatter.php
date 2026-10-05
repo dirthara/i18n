@@ -140,7 +140,13 @@ final class DurationFormatter implements DurationFormatterContract
             self::$units[$this->locale->code . '|' . $style] = $formatter;
         }
 
-        $formatted = $formatter->format([$amount]);
+        $failure = null;
+
+        try {
+            $formatted = $formatter->format([$amount]);
+        } catch (IntlException $failure) {
+            $formatted = false;
+        }
 
         if ($formatted === false) {
             throw FormatterException::formatFailed(
@@ -149,6 +155,7 @@ final class DurationFormatter implements DurationFormatterContract
                 $style,
                 $formatter->getErrorCode(),
                 $formatter->getErrorMessage(),
+                previous: $failure,
             );
         }
 
@@ -177,7 +184,13 @@ final class DurationFormatter implements DurationFormatterContract
             self::$digits[$this->locale->code . '|' . $style] = $formatter;
         }
 
-        $formatted = $formatter->format($value);
+        $failure = null;
+
+        try {
+            $formatted = $formatter->format($value);
+        } catch (IntlException $failure) {
+            $formatted = false;
+        }
 
         if ($formatted === false) {
             throw FormatterException::formatFailed(
@@ -186,6 +199,7 @@ final class DurationFormatter implements DurationFormatterContract
                 $style,
                 $formatter->getErrorCode(),
                 $formatter->getErrorMessage(),
+                previous: $failure,
             );
         }
 

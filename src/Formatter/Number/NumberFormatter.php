@@ -101,7 +101,13 @@ final class NumberFormatter implements NumberFormatterContract
         }
 
         $formatter = $this->formatter($style, $intlStyle);
-        $formatted = $formatter->format($number);
+        $failure = null;
+
+        try {
+            $formatted = $formatter->format($number);
+        } catch (IntlException $failure) {
+            $formatted = false;
+        }
 
         if ($formatted === false) {
             throw FormatterException::formatFailed(
@@ -110,6 +116,7 @@ final class NumberFormatter implements NumberFormatterContract
                 $style,
                 $formatter->getErrorCode(),
                 $formatter->getErrorMessage(),
+                previous: $failure,
             );
         }
 

@@ -9,7 +9,9 @@ Every exception the package throws implements `Dirthara\I18n\Exception\I18nExcep
 catches anything from the package. Each one carries a `context` array with the details of the failure, and wraps the
 exception that caused it, such as a Flysystem, JSON, PHP, or Intl exception, as its previous exception. No Intl
 exception or Intl error leaves the package unwrapped, including the `ValueError` PHP 8.5 throws when creating a formatter
-for a locale whose language ICU has no data for.
+for a locale whose language ICU has no data for. This holds whether `intl.use_exceptions` is on or off: a failure that
+`intl` reports by returning `false` and one it reports by throwing an `IntlException` end in the same package exception,
+with the `IntlException` as its previous exception when there is one.
 
 No message or context contains a translation. They can contain paths, locale codes, translation keys,
 cache keys, and prefixes, with control characters escaped in the message.

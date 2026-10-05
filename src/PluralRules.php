@@ -37,7 +37,13 @@ final class PluralRules
         }
 
         $formatter = $this->formatter();
-        $category = $formatter->format([$count]);
+        $failure = null;
+
+        try {
+            $category = $formatter->format([$count]);
+        } catch (IntlException $failure) {
+            $category = false;
+        }
 
         if ($category === false) {
             throw PluralRulesException::formatFailed(
@@ -45,6 +51,7 @@ final class PluralRules
                 $count,
                 $formatter->getErrorCode(),
                 $formatter->getErrorMessage(),
+                previous: $failure,
             );
         }
 

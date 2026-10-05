@@ -45,6 +45,7 @@ final class CurrencyFormatterException extends RuntimeException implements I18nE
         CurrencyStyle $style,
         int $intlCode,
         string $intlMessage,
+        ?Throwable $previous = null,
     ): self {
         return new self(
             message: sprintf(
@@ -54,6 +55,7 @@ final class CurrencyFormatterException extends RuntimeException implements I18nE
                 $locale->code,
                 self::printable($intlMessage),
             ),
+            previous: $previous,
             context: [
                 'locale' => $locale->code,
                 'currency' => $currency->code,

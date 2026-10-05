@@ -47,9 +47,10 @@ single newline.
 Read and follow https://github.com/dirthara/coding-standards/blob/main/docs/coding-standards/cs-7-exceptions-error-handling.md when creating or modifying exceptions.
 Every exception implements `Dirthara\I18n\Exception\I18nException` and uses the
 `HasExceptionContext` trait for its context.
-Never let a native Intl failure, such as an `IntlException` or a `false` result from an `intl` class, leave a public
-operation of this package: catch the specific type and throw a package exception with the Intl failure as `previous` or
-its error in the context, as `PluralRules` does. Formatters built on `intl` follow the same rule.
+Never let a native Intl failure, such as an `IntlException`, a `ValueError` from an `intl` constructor, or a `false`
+result from an `intl` class, leave a public operation of this package: catch the specific type and throw a package
+exception with the Intl failure as `previous` or its error in the context, as `PluralRules` does. Handle both the `false`
+result and the `IntlException` that replaces it when `intl.use_exceptions` is on, and test with that setting on.
 
 ## Documentation
 Read and follow https://github.com/dirthara/coding-standards/blob/main/docs/coding-standards/cs-6-documentation.md when writing the README or anything in `docs`.

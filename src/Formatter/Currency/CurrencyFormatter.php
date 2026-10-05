@@ -42,7 +42,13 @@ final class CurrencyFormatter implements CurrencyFormatterContract
         }
 
         $formatter = $this->formatter($style);
-        $formatted = $formatter->formatCurrency($amount, $currency->code);
+        $failure = null;
+
+        try {
+            $formatted = $formatter->formatCurrency($amount, $currency->code);
+        } catch (IntlException $failure) {
+            $formatted = false;
+        }
 
         if ($formatted === false) {
             throw CurrencyFormatterException::formatFailed(
@@ -51,6 +57,7 @@ final class CurrencyFormatter implements CurrencyFormatterContract
                 $style,
                 $formatter->getErrorCode(),
                 $formatter->getErrorMessage(),
+                previous: $failure,
             );
         }
 

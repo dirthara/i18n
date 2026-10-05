@@ -34,8 +34,13 @@ final class PluralRulesException extends RuntimeException implements I18nExcepti
         );
     }
 
-    public static function formatFailed(Locale $locale, int|float $count, int $intlCode, string $intlMessage): self
-    {
+    public static function formatFailed(
+        Locale $locale,
+        int|float $count,
+        int $intlCode,
+        string $intlMessage,
+        ?Throwable $previous = null,
+    ): self {
         return new self(
             message: sprintf(
                 'Unable to determine the plural category of %s for locale "%s": %s.',
@@ -43,6 +48,7 @@ final class PluralRulesException extends RuntimeException implements I18nExcepti
                 $locale->code,
                 self::printable($intlMessage),
             ),
+            previous: $previous,
             context: [
                 'locale' => $locale->code,
                 'count' => $count,

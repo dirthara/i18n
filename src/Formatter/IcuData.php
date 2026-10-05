@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Formatter;
 
+use IntlException;
 use ResourceBundle;
 use Dirthara\I18n\Locale;
 
@@ -48,10 +49,14 @@ final readonly class IcuData
 
     public function stringFrom(string $name, string $bundle, string ...$path): ?string
     {
-        $value = ResourceBundle::create($name, $bundle, fallback: false);
+        try {
+            $value = ResourceBundle::create($name, $bundle, fallback: false);
 
-        foreach ($path as $key) {
-            $value = $value instanceof ResourceBundle ? $value->get($key) : null;
+            foreach ($path as $key) {
+                $value = $value instanceof ResourceBundle ? $value->get($key) : null;
+            }
+        } catch (IntlException) {
+            return null;
         }
 
         return is_string($value) ? $value : null;

@@ -48,6 +48,7 @@ final class FormatterException extends RuntimeException implements I18nException
         string $style,
         int $intlCode,
         string $intlMessage,
+        ?Throwable $previous = null,
     ): self {
         return new self(
             message: sprintf(
@@ -57,6 +58,7 @@ final class FormatterException extends RuntimeException implements I18nException
                 $locale->code,
                 self::printable($intlMessage),
             ),
+            previous: $previous,
             context: [
                 'formatter' => $formatter,
                 'locale' => $locale->code,

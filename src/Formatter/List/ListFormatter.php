@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dirthara\I18n\Formatter\List;
 
 use ValueError;
+use IntlException;
 use IntlListFormatter;
 use Dirthara\I18n\Locale;
 use Dirthara\I18n\Enum\ListType;
@@ -51,7 +52,13 @@ final class ListFormatter implements ListFormatterContract
 
         $style = strtolower($type->name . '-' . $width->name);
         $formatter = $this->formatter($style, $type, $width);
-        $formatted = $formatter->format($strings);
+        $failure = null;
+
+        try {
+            $formatted = $formatter->format($strings);
+        } catch (IntlException $failure) {
+            $formatted = false;
+        }
 
         if ($formatted === false) {
             throw FormatterException::formatFailed(
@@ -60,6 +67,7 @@ final class ListFormatter implements ListFormatterContract
                 $style,
                 $formatter->getErrorCode(),
                 $formatter->getErrorMessage(),
+                previous: $failure,
             );
         }
 
@@ -94,7 +102,7 @@ final class ListFormatter implements ListFormatterContract
             );
 
             // @mago-expect analysis:avoid-catching-error
-        } catch (ValueError $exception) {
+        } catch (IntlException|ValueError $exception) {
             throw FormatterException::creationFailed(self::FORMATTER, $this->locale, $style, previous: $exception);
         }
 

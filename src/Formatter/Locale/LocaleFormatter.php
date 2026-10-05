@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dirthara\I18n\Formatter\Locale;
 
+use Closure;
+use IntlException;
 use Dirthara\I18n\Locale;
 use Locale as IntlLocale;
 use Dirthara\I18n\Formatter\IcuData;
@@ -32,7 +34,10 @@ final readonly class LocaleFormatter implements LocaleFormatterContract
      */
     public function format(Locale $locale): string
     {
-        $name = $this->displayed(IntlLocale::getDisplayName($locale->code, $this->locale->code), 'name');
+        $name = $this->displayed(fn(): string|false => IntlLocale::getDisplayName(
+            $locale->code,
+            $this->locale->code,
+        ), 'name');
 
         if (count($locale->variants) < 2) {
             return $name;
@@ -46,7 +51,10 @@ final readonly class LocaleFormatter implements LocaleFormatterContract
      */
     public function language(Locale $locale): string
     {
-        return $this->displayed(IntlLocale::getDisplayLanguage($locale->code, $this->locale->code), 'language');
+        return $this->displayed(fn(): string|false => IntlLocale::getDisplayLanguage(
+            $locale->code,
+            $this->locale->code,
+        ), 'language');
     }
 
     /**
@@ -54,11 +62,16 @@ final readonly class LocaleFormatter implements LocaleFormatterContract
      */
     public function region(Locale $locale): ?string
     {
-        if ($locale->region === null) {
+        $region = $locale->region;
+
+        if ($region === null) {
             return null;
         }
 
-        return $this->displayed(IntlLocale::getDisplayRegion('und-' . $locale->region, $this->locale->code), 'region');
+        return $this->displayed(fn(): string|false => IntlLocale::getDisplayRegion(
+            'und-' . $region,
+            $this->locale->code,
+        ), 'region');
     }
 
     /**
@@ -66,11 +79,16 @@ final readonly class LocaleFormatter implements LocaleFormatterContract
      */
     public function script(Locale $locale): ?string
     {
-        if ($locale->script === null) {
+        $script = $locale->script;
+
+        if ($script === null) {
             return null;
         }
 
-        return $this->displayed(IntlLocale::getDisplayScript('und-' . $locale->script, $this->locale->code), 'script');
+        return $this->displayed(fn(): string|false => IntlLocale::getDisplayScript(
+            'und-' . $script,
+            $this->locale->code,
+        ), 'script');
     }
 
     /**
@@ -83,10 +101,10 @@ final readonly class LocaleFormatter implements LocaleFormatterContract
         $names = [];
 
         foreach ($locale->variants as $variant) {
-            $names[] = $this->displayed(
-                IntlLocale::getDisplayVariant('und__' . strtoupper($variant), $this->locale->code),
-                'variant',
-            );
+            $names[] = $this->displayed(fn(): string|false => IntlLocale::getDisplayVariant(
+                'und__' . strtoupper($variant),
+                $this->locale->code,
+            ), 'variant');
         }
 
         return $names;
@@ -95,8 +113,21 @@ final readonly class LocaleFormatter implements LocaleFormatterContract
     /**
      * @throws FormatterException
      */
-    private function displayed(string|false $name, string $style): string
+    /**
+     * @param Closure(): (string|false) $display
+     *
+     * @throws FormatterException
+     */
+    private function displayed(Closure $display, string $style): string
     {
+        $failure = null;
+
+        try {
+            $name = $display();
+        } catch (IntlException $failure) {
+            $name = false;
+        }
+
         if ($name === false) {
             throw FormatterException::formatFailed(
                 self::FORMATTER,
@@ -104,6 +135,7 @@ final readonly class LocaleFormatter implements LocaleFormatterContract
                 $style,
                 intl_get_error_code(),
                 intl_get_error_message(),
+                previous: $failure,
             );
         }
 

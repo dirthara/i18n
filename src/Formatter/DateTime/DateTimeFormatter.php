@@ -47,7 +47,13 @@ final class DateTimeFormatter implements DateTimeFormatterContract
 
         $style = strtolower($dateStyle->name . '-' . $timeStyle->name);
         $formatter = $this->formatter($style, $dateStyle, $timeStyle);
-        $formatted = $formatter->format($dateTime);
+        $failure = null;
+
+        try {
+            $formatted = $formatter->format($dateTime);
+        } catch (IntlException $failure) {
+            $formatted = false;
+        }
 
         if ($formatted === false) {
             throw FormatterException::formatFailed(
@@ -56,6 +62,7 @@ final class DateTimeFormatter implements DateTimeFormatterContract
                 $style,
                 $formatter->getErrorCode(),
                 $formatter->getErrorMessage(),
+                previous: $failure,
             );
         }
 

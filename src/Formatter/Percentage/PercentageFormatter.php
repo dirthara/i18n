@@ -41,7 +41,13 @@ final class PercentageFormatter implements PercentageFormatterContract
         }
 
         $formatter = $this->formatter();
-        $formatted = $formatter->format($fraction);
+        $failure = null;
+
+        try {
+            $formatted = $formatter->format($fraction);
+        } catch (IntlException $failure) {
+            $formatted = false;
+        }
 
         if ($formatted === false) {
             throw FormatterException::formatFailed(
@@ -50,6 +56,7 @@ final class PercentageFormatter implements PercentageFormatterContract
                 self::STYLE,
                 $formatter->getErrorCode(),
                 $formatter->getErrorMessage(),
+                previous: $failure,
             );
         }
 
