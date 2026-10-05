@@ -63,7 +63,7 @@ final readonly class Locale
         if (
             $language === null
             || preg_match(self::LANGUAGE, $language) !== 1
-            || IntlLocale::getDisplayLanguage($language, displayLocale: 'en') === $language
+            || !$this->isNamed(IntlLocale::getDisplayLanguage($language, displayLocale: 'en'), $language)
         ) {
             throw InvalidLocaleException::forLocale($code);
         }
@@ -73,7 +73,7 @@ final readonly class Locale
         if ($script !== null) {
             if (
                 preg_match(self::SCRIPT, $script) !== 1
-                || IntlLocale::getDisplayScript('und_' . $script, displayLocale: 'en') === $script
+                || !$this->isNamed(IntlLocale::getDisplayScript('und_' . $script, displayLocale: 'en'), $script)
             ) {
                 throw InvalidLocaleException::forLocale($code);
             }
@@ -84,7 +84,7 @@ final readonly class Locale
         if ($region !== null) {
             if (
                 preg_match(self::REGION, $region) !== 1
-                || IntlLocale::getDisplayRegion('und_' . $region, displayLocale: 'en') === $region
+                || !$this->isNamed(IntlLocale::getDisplayRegion('und_' . $region, displayLocale: 'en'), $region)
             ) {
                 throw InvalidLocaleException::forLocale($code);
             }
@@ -125,5 +125,13 @@ final readonly class Locale
     private function subtag(?string $value): ?string
     {
         return $value === null || $value === '' ? null : $value;
+    }
+
+    /**
+     * ICU falls back to the code itself for a subtag it has no name for, and returns false when the lookup fails.
+     */
+    private function isNamed(string|false $name, string $subtag): bool
+    {
+        return $name !== false && $name !== $subtag;
     }
 }
